@@ -10,4 +10,10 @@ describe("Docker deployment", () => {
     expect(generateIndex).toBeGreaterThan(-1);
     expect(generateIndex).toBeLessThan(buildIndex);
   });
+
+  it("does not require an optional public directory in the runner image", () => {
+    const dockerfile = readFileSync("Dockerfile", "utf8");
+
+    expect(dockerfile).not.toContain("COPY --from=builder /app/public ./public");
+  });
 });
