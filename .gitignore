@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+dev.db
+dev.db-journal
+prisma/*.db
+prisma/*.db-journal
+data
+outputs
+work
