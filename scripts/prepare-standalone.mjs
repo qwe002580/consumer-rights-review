@@ -19,6 +19,7 @@ function copyIntoStandalone(sourceRelativePath, destinationRelativePath = source
 copyIntoStandalone("public");
 copyIntoStandalone(path.join(".next", "static"), path.join(".next", "static"));
 copyIntoStandalone("prisma");
+copyIntoStandalone("scripts/start-production.mjs", "start-production.mjs");
 
 const dataDirectory = path.join(standaloneRoot, "data");
 mkdirSync(dataDirectory, { recursive: true });

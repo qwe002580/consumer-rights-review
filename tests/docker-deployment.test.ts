@@ -16,4 +16,12 @@ describe("Docker deployment", () => {
 
     expect(dockerfile).not.toContain("COPY --from=builder /app/public ./public");
   });
+
+  it("initializes the database before starting the production server", () => {
+    const dockerfile = readFileSync("Dockerfile", "utf8");
+    const standalonePreparation = readFileSync("scripts/prepare-standalone.mjs", "utf8");
+
+    expect(standalonePreparation).toContain('copyIntoStandalone("scripts/start-production.mjs"');
+    expect(dockerfile).toContain('CMD ["node", "start-production.mjs"]');
+  });
 });
