@@ -18,6 +18,114 @@ body {
   min-height: 100%;
 }
 
+.admin-login-shell {
+  display: grid;
+  place-items: center;
+  width: min(100%, 520px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px 18px;
+}
+
+.admin-login-card {
+  width: 100%;
+  padding: clamp(28px, 7vw, 44px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: 0 24px 64px rgba(43, 31, 20, 0.12);
+}
+
+.admin-login-card h1 {
+  font-size: clamp(2rem, 8vw, 3.2rem);
+}
+
+.admin-login-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 28px;
+  border-radius: 16px;
+  background: var(--forest);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.admin-login-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.admin-login-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-login-form label span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-login-form input:focus-visible,
+.admin-login-form button:focus-visible,
+.admin-session-bar button:focus-visible {
+  outline: 3px solid rgba(188, 123, 55, 0.35);
+  outline-offset: 3px;
+}
+
+.login-error {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid rgba(158, 50, 43, 0.24);
+  border-radius: 10px;
+  background: rgba(158, 50, 43, 0.08);
+  color: #812f2a;
+  font-size: 14px;
+}
+
+.admin-login-note {
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.admin-session-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(calc(100% - 32px), 1208px);
+  margin: 18px auto -28px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 252, 248, 0.78);
+  color: var(--muted);
+  backdrop-filter: blur(14px);
+}
+
+.admin-session-bar span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-session-bar button {
+  padding: 7px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--forest);
+  color: #fff;
+  cursor: pointer;
+}
+
+.admin-session-bar button:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
 body {
   background:
     radial-gradient(circle at top left, rgba(188, 123, 55, 0.14), transparent 28%),
