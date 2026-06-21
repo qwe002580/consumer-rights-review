@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { analyzeIntake } from "@/lib/analysis";
 import { prisma } from "@/lib/db";
 import { intakeSchema } from "@/lib/schema";
+import { sendNewCaseNotification } from "@/lib/wecom-case-notification";
 
 export async function POST(request: Request) {
   const json = await request.json();
@@ -35,6 +36,19 @@ export async function POST(request: Request) {
         reviewFlag: analysis.review_flag,
         status: "new"
       }
+    });
+
+    const siteUrl =
+      process.env.PUBLIC_SITE_URL?.trim() || new URL(request.url).origin;
+
+    await sendNewCaseNotification({
+      id: record.id,
+      scenario: record.scenario,
+      amount: record.amount,
+      stage: record.stage,
+      reviewFlag: record.reviewFlag,
+      createdAt: record.createdAt,
+      siteUrl
     });
 
     return NextResponse.json(
