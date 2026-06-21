@@ -1,5 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntakeForm } from "../components/intake-form";
 
@@ -47,5 +48,13 @@ describe("customer refund intake", () => {
     expect(html).toContain(
       "本工具仅基于用户填写信息生成初步参考，不构成正式法律意见或结果承诺。具体处理方式需结合完整证据材料进一步判断。"
     );
+  });
+
+  it("defines dedicated responsive styles for the new customer sections", () => {
+    const css = readFileSync("app/globals.css", "utf8");
+
+    expect(css).toContain(".applicability-grid");
+    expect(css).toContain(".lead-capture-section");
+    expect(css).toContain(".legal-disclaimer");
   });
 });

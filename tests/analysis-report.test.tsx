@@ -1,5 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { AnalysisReport } from "../components/analysis-report";
 
@@ -54,5 +55,13 @@ describe("analysis report", () => {
     );
 
     expect(html).not.toContain("添加微信领取清单");
+  });
+
+  it("defines dedicated styles for result context, steps, and conversion", () => {
+    const css = readFileSync("app/globals.css", "utf8");
+
+    expect(css).toContain(".result-context");
+    expect(css).toContain(".action-steps");
+    expect(css).toContain(".conversion-card");
   });
 });
