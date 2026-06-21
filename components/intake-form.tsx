@@ -71,6 +71,15 @@ const goalOptions = [
   { value: "terminate_service", label: "解除合同或终止服务" }
 ];
 
+const applicableSituations = [
+  "商家拒绝退款",
+  "培训机构退费难",
+  "医美项目做了一半想退款",
+  "直播间/电商售后纠纷",
+  "健身卡、摄影、婚庆服务退款",
+  "付款后服务未履行"
+];
+
 type IntakeFormState = Omit<IntakeInput, "amount"> & {
   amount: string;
 };
@@ -153,15 +162,26 @@ export function IntakeForm() {
     <main className="page-shell">
       <section className="hero-card">
         <div>
-          <p className="eyebrow">Consumer Dispute Review</p>
-          <h1>消费纠纷评估</h1>
+          <p className="hero-product-name">退款纠纷自测</p>
+          <h1>3分钟判断你的钱还能不能退</h1>
           <p className="lede">
-            3 分钟左右填写核心事实，系统会基于你提交的信息生成结构化初步判断，并提示优先补充的材料与下一步动作。
+            填写付款、沟通、材料情况，生成初步处理建议和补充材料清单。
           </p>
         </div>
-        <div className="hero-pills">
-          <span>适用于退款、退费、售后纠纷</span>
-          <span>先评估，再决定是否继续推进</span>
+      </section>
+
+      <section className="applicability-panel" aria-labelledby="applicability-title">
+        <div className="applicability-heading">
+          <h2 id="applicability-title">适合以下情况</h2>
+          <p>如果你遇到下面任意一种情况，可以先完成自测。</p>
+        </div>
+        <div className="applicability-grid">
+          {applicableSituations.map((situation) => (
+            <div className="applicability-item" key={situation}>
+              <span aria-hidden="true">✓</span>
+              <strong>{situation}</strong>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -173,26 +193,6 @@ export function IntakeForm() {
           </div>
 
           <form className="intake-form" onSubmit={handleSubmit}>
-            <label>
-              <span>您的称呼</span>
-              <input
-                required
-                value={form.clientName}
-                onChange={(event) => setForm((current) => ({ ...current, clientName: event.target.value }))}
-              />
-            </label>
-
-            <label>
-              <span>对方联系方式</span>
-              <input
-                required
-                placeholder="例如手机号、微信号、店铺客服方式"
-                value={form.contact}
-                onChange={(event) => setForm((current) => ({ ...current, contact: event.target.value }))}
-              />
-              <small className="field-hint">这项仅用于分析和后续跟进，不会展示在结果页。</small>
-            </label>
-
             <label>
               <span>纠纷类型</span>
               <select
@@ -397,6 +397,41 @@ export function IntakeForm() {
               />
             </label>
 
+            <div className="lead-capture-section wide">
+              <div className="lead-capture-heading">
+                <span>最后一步</span>
+                <strong>接收并保存你的自测记录</strong>
+                <p>填写本人信息，方便后续查看和继续沟通。</p>
+              </div>
+              <div className="lead-capture-grid">
+                <label>
+                  <span>您的称呼</span>
+                  <input
+                    required
+                    value={form.clientName}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, clientName: event.target.value }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span>您的联系方式</span>
+                  <input
+                    required
+                    placeholder="手机号或微信号"
+                    value={form.contact}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, contact: event.target.value }))
+                    }
+                  />
+                  <small className="field-hint">
+                    仅用于案件记录和后续联系，不会展示在自测结果中。
+                  </small>
+                </label>
+              </div>
+            </div>
+
             <div className="form-actions wide">
               <button className="primary-button" disabled={loading} type="submit">
                 {loading ? "正在整理结果..." : "查看分析结果"}
@@ -405,8 +440,18 @@ export function IntakeForm() {
           </form>
         </section>
 
-        <AnalysisReport error={error} loading={loading} result={result} />
+        <AnalysisReport
+          error={error}
+          goal={form.goal}
+          loading={loading}
+          result={result}
+          scenario={form.scenario}
+        />
       </div>
+
+      <footer className="legal-disclaimer">
+        本工具仅基于用户填写信息生成初步参考，不构成正式法律意见或结果承诺。具体处理方式需结合完整证据材料进一步判断。
+      </footer>
     </main>
   );
 }
