@@ -89,7 +89,7 @@ export function CaseDetail(props: CaseDetailProps) {
           <h3>基本信息</h3>
           <div className="detail-list">
             <div><span>客户称呼</span><strong>{props.clientName}</strong></div>
-            <div><span>对方联系方式</span><strong>{props.contact}</strong></div>
+            <div><span>客户联系方式</span><strong>{props.contact}</strong></div>
             <div><span>纠纷类型</span><strong>{getScenarioLabel(props.scenario)}</strong></div>
             <div><span>支付金额</span><strong>¥{props.amount.toLocaleString("zh-CN")}</strong></div>
           </div>

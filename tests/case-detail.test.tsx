@@ -40,7 +40,7 @@ describe("case detail", () => {
       />
     );
 
-    expect(html).toContain("对方联系方式");
+    expect(html).toContain("客户联系方式");
     expect(html).toContain("客户提交信息");
     expect(html).toContain("案件分析意见");
     expect(html).not.toContain("json-block");

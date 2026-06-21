@@ -165,7 +165,9 @@ export function CaseTable({ cases }: { cases: CaseListItem[] }) {
                   <a className="table-link" href={`/cases/${item.id}`}>
                     {item.clientName}
                   </a>
-                  <span className="case-meta">{getScenarioLabel(item.scenario)} · {item.contact}</span>
+                  <span className="case-meta">
+                    {getScenarioLabel(item.scenario)} · 客户联系方式：{item.contact}
+                  </span>
                 </td>
                 <td>
                   <span className={`risk-badge risk-${item.reviewFlag ?? "none"}`}>

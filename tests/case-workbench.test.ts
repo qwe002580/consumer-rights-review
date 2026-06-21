@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { filterAndSortCases } from "../components/case-table";
 
 const baseCase = {
@@ -14,6 +15,12 @@ const baseCase = {
 };
 
 describe("case workbench", () => {
+  it("labels stored contact data as the customer contact", () => {
+    const source = readFileSync("components/case-table.tsx", "utf8");
+
+    expect(source).toContain("客户联系方式：");
+  });
+
   it("places urgent cases before self-service cases", () => {
     const urgent = {
       ...baseCase,
