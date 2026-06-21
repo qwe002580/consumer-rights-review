@@ -1,42 +1,30 @@
 import React from "react";
-import type { AnalysisOutput } from "@/lib/schema";
+import {
+  getGoalLabel,
+  getReviewFlagLabel,
+  getScenarioLabel,
+  type AnalysisOutput
+} from "@/lib/schema";
 import { consultationLabel, getConsultationUrl } from "@/lib/site-config";
 
 type AnalysisReportProps = {
   result: AnalysisOutput | null;
+  scenario: string;
+  goal: string;
   error?: string | null;
   loading?: boolean;
 };
 
-function renderList(items: string[]) {
+function renderList(items: string[], fallback: string) {
+  const visibleItems = items.length ? items : [fallback];
+
   return (
     <ul className="report-list">
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <li key={item}>{item}</li>
       ))}
     </ul>
   );
-}
-
-function shouldShowConsultationPrompt(result: AnalysisOutput) {
-  if (result.review_flag !== "self_service") {
-    return true;
-  }
-
-  return result.risks.length >= 3;
-}
-
-function buildConsultationPrompt(result: AnalysisOutput) {
-  switch (result.review_flag) {
-    case "complex_high_risk":
-      return "这类情况通常不只是补一句说明就能解决，往往更适合先做一次人工审查，再决定后续沟通和处理路径。";
-    case "contact_soon":
-      return "当前争议点已经比较集中，如果你希望减少来回沟通成本，通常建议尽快进入人工梳理。";
-    case "manual_review":
-      return "结合目前的风险点和材料情况，这类案件通常更适合进一步人工复核，避免后续反复补证或沟通走偏。";
-    default:
-      return "如果你不想自己反复整理材料，也可以考虑进一步人工审查，再进入下一步处理。";
-  }
 }
 
 function ConsultationButton({ className, url }: { className: string; url: string }) {
@@ -47,8 +35,22 @@ function ConsultationButton({ className, url }: { className: string; url: string
   );
 }
 
+function ConsultationCard({ className, url }: { className: string; url: string }) {
+  return (
+    <article className={`report-card conversion-card ${className}`}>
+      <div>
+        <h3>领取你的专属材料清单</h3>
+        <p>添加微信，发送“退款自测”，继续梳理材料和处理路径。</p>
+      </div>
+      <ConsultationButton className="consultation-link" url={url} />
+    </article>
+  );
+}
+
 export function AnalysisReport({
   result,
+  scenario,
+  goal,
   error = null,
   loading = false
 }: AnalysisReportProps) {
@@ -99,54 +101,61 @@ export function AnalysisReport({
         <h2>分析结果</h2>
       </div>
 
+      <article className="report-card result-context">
+        <h3>你的纠纷情况</h3>
+        <div className="result-context-grid">
+          <div>
+            <span>纠纷类型</span>
+            <strong>{getScenarioLabel(scenario)}</strong>
+          </div>
+          <div>
+            <span>目标诉求</span>
+            <strong>{getGoalLabel(goal)}</strong>
+          </div>
+          <div>
+            <span>处理倾向</span>
+            <strong>{getReviewFlagLabel(result.review_flag)}</strong>
+          </div>
+        </div>
+      </article>
+
       {consultationUrl ? (
-        <article className="report-card consultation-banner">
-          <strong>结果出来后建议尽快添加老师继续咨询</strong>
-          <p>如果你希望有人帮你继续判断、梳理材料和下一步怎么推进，可以直接点下面按钮添加。</p>
-          <ConsultationButton className="consultation-link consultation-link-hero" url={consultationUrl} />
-        </article>
+        <ConsultationCard className="conversion-card-top" url={consultationUrl} />
       ) : null}
 
       <article className="report-card emphasis-card">
         <h3>初步判断</h3>
         <p>{result.summary}</p>
-        {consultationUrl ? (
-          <div className="consultation-inline">
-            <span>不想自己反复整理材料时，可以直接进入人工沟通。</span>
-            <ConsultationButton className="consultation-link consultation-link-inline" url={consultationUrl} />
-          </div>
-        ) : null}
+      </article>
+
+      <article className="report-card materials-card">
+        <h3>你现在缺少的关键材料</h3>
+        {renderList(result.materials, "根据目前填写信息，暂未识别到明确缺失材料。")}
+      </article>
+
+      <article className="report-card action-card">
+        <h3>下一步建议</h3>
+        <ol className="action-steps">
+          {(result.next_steps.length
+            ? result.next_steps
+            : ["先整理现有付款、沟通和合同材料，再决定后续处理方式。"]
+          ).map((item, index) => (
+            <li key={item}>
+              <span>第 {index + 1} 步</span>
+              <p>{item}</p>
+            </li>
+          ))}
+        </ol>
       </article>
 
       <div className="report-grid">
         <article className="report-card">
           <h3>维权基础</h3>
-          {renderList(result.basis)}
+          {renderList(result.basis, "根据目前填写信息，暂未识别到明确推进基础。")}
         </article>
         <article className="report-card">
           <h3>主要风险</h3>
-          {renderList(result.risks)}
-        </article>
-      </div>
-
-      {shouldShowConsultationPrompt(result) ? (
-        <article className="report-card consultation-card">
-          <h3>进一步人工审查建议</h3>
-          <p>{buildConsultationPrompt(result)}</p>
-          {consultationUrl ? (
-            <ConsultationButton className="consultation-link" url={consultationUrl} />
-          ) : null}
-        </article>
-      ) : null}
-
-      <div className="report-grid">
-        <article className="report-card">
-          <h3>建议下一步</h3>
-          {renderList(result.next_steps)}
-        </article>
-        <article className="report-card">
-          <h3>建议补充材料</h3>
-          {renderList(result.materials)}
+          {renderList(result.risks, "根据目前填写信息，暂未识别到明确风险点。")}
         </article>
       </div>
 
@@ -156,11 +165,7 @@ export function AnalysisReport({
       </article>
 
       {consultationUrl ? (
-        <article className="report-card consultation-footer-card">
-          <h3>想继续推进这件事？</h3>
-          <p>如果你已经看完结果，下一步最直接的方式就是点击按钮，主动添加进来，我们再继续帮你判断和梳理。</p>
-          <ConsultationButton className="consultation-link consultation-link-footer" url={consultationUrl} />
-        </article>
+        <ConsultationCard className="conversion-card-footer" url={consultationUrl} />
       ) : null}
     </section>
   );

@@ -19,26 +19,40 @@ afterEach(() => {
 
 describe("analysis report", () => {
   it("uses client-facing wording without mentioning ai", () => {
-    const html = renderToStaticMarkup(<AnalysisReport result={sampleResult} />);
+    const html = renderToStaticMarkup(
+      <AnalysisReport goal="full_refund" result={sampleResult} scenario="education" />
+    );
 
     expect(html).toContain("分析结果");
+    expect(html).toContain("你的纠纷情况");
+    expect(html).toContain("教培退费");
+    expect(html).toContain("全额退款");
+    expect(html).toContain("初步判断");
+    expect(html).toContain("你现在缺少的关键材料");
+    expect(html).toContain("第 1 步");
     expect(html).not.toContain("AI");
   });
 
-  it("shows the consultation button when a consultation url is configured", () => {
+  it("shows two focused material-list consultation actions", () => {
     process.env.NEXT_PUBLIC_CONSULTATION_URL = "https://work.weixin.qq.com/example";
 
-    const html = renderToStaticMarkup(<AnalysisReport result={sampleResult} />);
+    const html = renderToStaticMarkup(
+      <AnalysisReport goal="full_refund" result={sampleResult} scenario="education" />
+    );
 
-    expect(html).toContain("添加老师继续咨询");
+    expect(html).toContain("领取你的专属材料清单");
+    expect(html).toContain("发送“退款自测”");
+    expect(html).toContain("添加微信领取清单");
     expect(html).toContain("https://work.weixin.qq.com/example");
-    expect(html.match(/添加老师继续咨询/g)?.length).toBeGreaterThanOrEqual(2);
-    expect(html).toContain("结果出来后建议尽快添加");
+    expect(html.match(/添加微信领取清单/g)?.length).toBe(2);
+    expect(html).not.toContain("结果出来后建议尽快添加");
   });
 
   it("does not show the consultation button when no consultation url is configured", () => {
-    const html = renderToStaticMarkup(<AnalysisReport result={sampleResult} />);
+    const html = renderToStaticMarkup(
+      <AnalysisReport goal="full_refund" result={sampleResult} scenario="education" />
+    );
 
-    expect(html).not.toContain("添加老师继续咨询");
+    expect(html).not.toContain("添加微信领取清单");
   });
 });
