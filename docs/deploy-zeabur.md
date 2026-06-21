@@ -98,12 +98,30 @@ DEEPSEEK_API_KEY=你的DeepSeekKey
 DEEPSEEK_API_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
 NEXT_PUBLIC_CONSULTATION_URL=你的企微获客链接
+WECOM_CASE_WEBHOOK_URL=你的企业微信群机器人Webhook
+PUBLIC_SITE_URL=https://consumer-rights-review.zeabur.app
 ```
 
 说明：
 
 - `DATABASE_URL` 这里我已经按当前项目部署方式改成服务器内可用的相对路径
 - `NEXT_PUBLIC_CONSULTATION_URL` 就是你现在要给客户点的咨询按钮链接
+- `WECOM_CASE_WEBHOOK_URL` 只用于服务端发送新案件通知，不能写进网页或提交到 GitHub
+- `PUBLIC_SITE_URL` 用于生成通知里的案件后台链接
+
+### 新案件企业微信通知
+
+配置完成后，客户案件成功保存时，指定企业微信群会收到一条不含客户姓名和联系方式的案件摘要。
+
+验证方式：
+
+1. 在 Zeabur 服务变量中添加 `WECOM_CASE_WEBHOOK_URL` 和 `PUBLIC_SITE_URL`
+2. 重新部署服务
+3. 使用不含真实客户资料的测试案件验证一次
+4. 确认群里收到通知，且后台链接指向正式域名
+5. 如果测试案件进入后台，验证后将其标记为关闭
+
+Webhook 属于敏感密钥，不要把真实地址提交到仓库、粘贴到公开页面或放进浏览器端代码。
 
 ### 5. 给数据库留持久化空间
 
