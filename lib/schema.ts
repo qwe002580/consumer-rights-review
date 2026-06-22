@@ -177,6 +177,32 @@ export type AnalysisOutput = z.infer<typeof analysisOutputSchema>;
 export type LegacyAnalysisOutput = z.infer<typeof legacyAnalysisOutputSchema>;
 export type PublicAnalysis = z.infer<typeof publicAnalysisSchema>;
 
+export type StoredAnalysisDisplay = Omit<AnalysisOutput, "probability"> & {
+  probability: ProbabilityAssessment | null;
+};
+
+export function normalizeStoredAnalysis(value: unknown): StoredAnalysisDisplay | null {
+  const current = analysisOutputSchema.safeParse(value);
+  if (current.success) return current.data;
+
+  const legacy = legacyAnalysisOutputSchema.safeParse(value);
+  if (!legacy.success) return null;
+
+  return {
+    summary: legacy.data.summary,
+    favorable_factors: legacy.data.basis,
+    adverse_factors: legacy.data.risks,
+    decisive_issues: [],
+    strategy: "旧案件未生成完整处理策略。",
+    next_steps: legacy.data.next_steps,
+    public_stage_titles: [],
+    materials: legacy.data.materials,
+    communication: legacy.data.communication,
+    review_flag: legacy.data.review_flag,
+    probability: null
+  };
+}
+
 export const caseUpdateSchema = z.object({
   status: z.enum(["new", "reviewed", "contacted", "on_hold", "closed"]),
   operatorNotes: z.string().default("")

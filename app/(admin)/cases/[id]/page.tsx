@@ -27,6 +27,7 @@ export default async function CaseDetailPage({
         analysis={record.analysis}
         clientName={record.clientName}
         contact={record.contact}
+        createdAt={record.createdAt.toISOString()}
         id={record.id}
         intake={record.intake}
         operatorNotes={record.operatorNotes}
