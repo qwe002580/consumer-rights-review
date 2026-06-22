@@ -109,6 +109,20 @@ export const intakeSchema = z.object({
   missingEvidenceType: z.string().optional()
 });
 
+export const probabilityRangeSchema = z.object({
+  min: z.number().int().min(0).max(95),
+  max: z.number().int().min(0).max(95)
+});
+
+export const probabilityAssessmentSchema = z.object({
+  full_success: probabilityRangeSchema,
+  substantive_result: probabilityRangeSchema,
+  confidence: z.enum(["limited", "moderate", "strong"]),
+  factors: z.array(z.string())
+});
+
+export type ProbabilityAssessment = z.infer<typeof probabilityAssessmentSchema>;
+
 export const analysisOutputSchema = z.object({
   summary: z.string().min(1),
   basis: z.array(z.string()).min(1),
