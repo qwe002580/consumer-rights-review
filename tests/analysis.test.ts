@@ -1,45 +1,67 @@
-import { describe, expect, it } from "vitest";
-import { analysisOutputSchema } from "../lib/schema";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { modelAnalysisSchema, type ModelAnalysis } from "../lib/schema";
 
-describe("analysis output schema", () => {
-  it("accepts the fixed AI response structure", () => {
-    const parsed = analysisOutputSchema.parse({
-      summary: "从现有信息看，案件具备继续主张基础。",
-      basis: ["付款事实明确"],
-      risks: ["聊天承诺材料仍需补充"],
-      next_steps: ["先整理付款和聊天记录"],
-      materials: ["付款记录截图"],
-      communication: "请贵方在合理期限内书面回复。",
-      review_flag: "manual_review"
-    });
+const intake = {
+  clientName: "王女士",
+  contact: "wx-private-contact",
+  scenario: "education",
+  amount: 12800,
+  purchaseDate: "2026-05-28",
+  paymentMethod: "installment",
+  stage: "deadlock",
+  issues: ["misrepresentation"],
+  evidence: ["payment", "chat"],
+  obstacles: ["missingEvidence"],
+  goal: "fullRefund",
+  summary: "商家拒绝退款"
+};
 
-    expect(parsed.review_flag).toBe("manual_review");
+const modelAnalysis = (
+  overrides: Partial<ModelAnalysis> = {}
+): ModelAnalysis => ({
+  summary: "本案涉及12,800元教培分期，争议集中在宣传承诺与实际服务不一致。",
+  favorable_factors: ["付款记录和沟通记录能够对应交易事实"],
+  adverse_factors: ["关键宣传页面尚未完整保存"],
+  decisive_issues: ["能否证明报名时的具体退款承诺"],
+  strategy: "先固定宣传承诺与实际履行差异，再确定协商和投诉顺序。",
+  next_steps: [
+    "整理付款、合同和承诺截图并按时间排序",
+    "核对合同退款条款",
+    "形成正式沟通方案"
+  ],
+  public_stage_titles: ["核对合同和承诺材料", "评估后续处理路径"],
+  materials: ["报名页面及退款承诺截图"],
+  communication: "完整内部沟通建议",
+  review_flag: "contact_soon",
+  ...overrides
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe("professional analysis", () => {
+  it("accepts the case-specific model response structure", () => {
+    const parsed = modelAnalysisSchema.parse(modelAnalysis());
+
+    expect(parsed.decisive_issues).toHaveLength(1);
+    expect(parsed.public_stage_titles).toHaveLength(2);
   });
 
-  it("formats intake data into a constrained analysis prompt", async () => {
+  it("formats intake into a specific prompt without private contact data", async () => {
     const { buildAnalysisPrompt } = await import("../lib/prompt");
-    const prompt = buildAnalysisPrompt({
-      clientName: "王女士",
-      contact: "微信号",
-      scenario: "education",
-      amount: 12800,
-      purchaseDate: "2026-05-28",
-      paymentMethod: "installment",
-      stage: "deadlock",
-      issues: ["misrepresentation"],
-      evidence: ["payment", "chat"],
-      obstacles: ["missingEvidence"],
-      goal: "fullRefund",
-      summary: "商家拒绝退款"
-    });
+    const prompt = buildAnalysisPrompt(intake);
 
-    expect(prompt).toContain("不得作出胜诉承诺");
-    expect(prompt).toContain("summary");
-    expect(prompt).toContain("review_flag");
+    expect(prompt).toContain("12,800");
     expect(prompt).toContain("教培退费");
-    expect(prompt).not.toContain('"scenario": "education"');
-    expect(prompt).toContain("语气应当冷静、克制、像专业顾问");
-    expect(prompt).toContain("不要使用“稳赢”");
+    expect(prompt).toContain("多轮沟通后仍无进展");
+    expect(prompt).toContain("不得输出成功概率");
+    expect(prompt).toContain("禁止使用固定开头");
+    expect(prompt).toContain("favorable_factors");
+    expect(prompt).toContain("decisive_issues");
+    expect(prompt).toContain("public_stage_titles");
+    expect(prompt).not.toContain("wx-private-contact");
+    expect(prompt).not.toContain("王女士");
   });
 
   it("exposes the intake form component module", async () => {
@@ -47,31 +69,20 @@ describe("analysis output schema", () => {
     expect(typeof mod.IntakeForm).toBe("function");
   });
 
-  it("returns a professional fallback analysis tone when no api key is configured", async () => {
-    const originalKey = process.env.DEEPSEEK_API_KEY;
-    delete process.env.DEEPSEEK_API_KEY;
-
+  it("returns a case-specific fallback with probability when no key is configured", async () => {
+    vi.stubEnv("DEEPSEEK_API_KEY", "");
     const { analyzeIntake } = await import("../lib/analysis");
-    const result = await analyzeIntake({
-      clientName: "王女士",
-      contact: "微信号",
-      scenario: "education",
-      amount: 12800,
-      purchaseDate: "2026-05-28",
-      paymentMethod: "installment",
-      stage: "deadlock",
-      issues: ["misrepresentation"],
-      evidence: ["payment", "chat"],
-      obstacles: ["missingEvidence"],
-      goal: "fullRefund",
-      summary: "商家拒绝退款"
-    });
 
-    expect(result.summary).toContain("从现有信息看");
-    expect(result.summary).not.toContain("education");
+    const result = await analyzeIntake(intake);
+
+    expect(result.summary).toContain("教培退费");
+    expect(result.summary).toContain("12,800");
+    expect(result.summary).not.toMatch(/^从现有信息看/);
+    expect(result.favorable_factors).toContain("已提供付款记录，可用于确认交易金额和付款事实");
     expect(result.communication).toContain("请贵方");
-
-    process.env.DEEPSEEK_API_KEY = originalKey;
+    expect(result.probability.full_success.max).toBeLessThanOrEqual(
+      result.probability.substantive_result.max
+    );
   });
 
   it("upgrades review flags for complex cases even if the model is conservative", async () => {
@@ -79,28 +90,10 @@ describe("analysis output schema", () => {
 
     const upgraded = applyReviewFlagPolicy(
       {
-        clientName: "王女士",
-        contact: "微信号",
-        scenario: "education",
-        amount: 12800,
-        purchaseDate: "2025-05-28",
-        paymentMethod: "installment",
-        stage: "deadlock",
-        issues: ["misrepresentation"],
-        evidence: ["payment", "chat"],
-        obstacles: ["missingEvidence", "platformRejected"],
-        goal: "fullRefund",
-        summary: "商家拒绝退款"
+        ...intake,
+        obstacles: ["missingEvidence", "platformRejected"]
       },
-      {
-        summary: "从现有信息看，案件仍可推进。",
-        basis: ["付款事实明确"],
-        risks: ["关键材料不完整"],
-        next_steps: ["先补材料"],
-        materials: ["补聊天记录"],
-        communication: "请贵方尽快回复。",
-        review_flag: "self_service"
-      }
+      modelAnalysis({ review_flag: "self_service" })
     );
 
     expect(upgraded.review_flag).toBe("complex_high_risk");
@@ -111,28 +104,13 @@ describe("analysis output schema", () => {
 
     const result = applyReviewFlagPolicy(
       {
-        clientName: "王女士",
-        contact: "微信号",
-        scenario: "education",
+        ...intake,
         amount: 3000,
-        purchaseDate: "2025-05-28",
         paymentMethod: "full",
         stage: "negotiating",
-        issues: ["misrepresentation"],
-        evidence: ["payment", "chat"],
-        obstacles: [],
-        goal: "fullRefund",
-        summary: "商家拒绝退款"
+        obstacles: []
       },
-      {
-        summary: "从现有信息看，案件仍可推进。",
-        basis: ["付款事实明确"],
-        risks: ["存在较大处理不确定性"],
-        next_steps: ["先补材料"],
-        materials: ["补聊天记录"],
-        communication: "请贵方尽快回复。",
-        review_flag: "contact_soon"
-      }
+      modelAnalysis({ review_flag: "contact_soon" })
     );
 
     expect(result.review_flag).toBe("contact_soon");

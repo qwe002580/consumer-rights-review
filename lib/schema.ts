@@ -123,7 +123,7 @@ export const probabilityAssessmentSchema = z.object({
 
 export type ProbabilityAssessment = z.infer<typeof probabilityAssessmentSchema>;
 
-export const analysisOutputSchema = z.object({
+export const legacyAnalysisOutputSchema = z.object({
   summary: z.string().min(1),
   basis: z.array(z.string()).min(1),
   risks: z.array(z.string()).min(1),
@@ -138,8 +138,32 @@ export const analysisOutputSchema = z.object({
   ])
 });
 
+export const modelAnalysisSchema = z.object({
+  summary: z.string().min(1),
+  favorable_factors: z.array(z.string()).min(1),
+  adverse_factors: z.array(z.string()).min(1),
+  decisive_issues: z.array(z.string()).min(1),
+  strategy: z.string().min(1),
+  next_steps: z.array(z.string()).min(2),
+  public_stage_titles: z.array(z.string()).min(1).max(4),
+  materials: z.array(z.string()).min(1),
+  communication: z.string().min(1),
+  review_flag: z.enum([
+    "self_service",
+    "manual_review",
+    "contact_soon",
+    "complex_high_risk"
+  ])
+});
+
+export const analysisOutputSchema = modelAnalysisSchema.extend({
+  probability: probabilityAssessmentSchema
+});
+
 export type IntakeInput = z.infer<typeof intakeSchema>;
+export type ModelAnalysis = z.infer<typeof modelAnalysisSchema>;
 export type AnalysisOutput = z.infer<typeof analysisOutputSchema>;
+export type LegacyAnalysisOutput = z.infer<typeof legacyAnalysisOutputSchema>;
 
 export const caseUpdateSchema = z.object({
   status: z.enum(["new", "reviewed", "contacted", "on_hold", "closed"]),
