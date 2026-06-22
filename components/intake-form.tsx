@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnalysisReport } from "@/components/analysis-report";
-import type { AnalysisOutput, IntakeInput } from "@/lib/schema";
+import type { IntakeInput, PublicAnalysis } from "@/lib/schema";
 
 const scenarioOptions = [
   { value: "education", label: "教培退费" },
@@ -111,7 +111,7 @@ function toggleValue(values: string[], value: string) {
 
 export function IntakeForm() {
   const [form, setForm] = useState<IntakeFormState>(initialState);
-  const [result, setResult] = useState<AnalysisOutput | null>(null);
+  const [result, setResult] = useState<PublicAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,7 +145,7 @@ export function IntakeForm() {
         throw new Error("信息暂时无法完成分析，请检查是否有必填项遗漏后重试。");
       }
 
-      setResult(json.analysis as AnalysisOutput);
+      setResult(json.analysis as PublicAnalysis);
     } catch (submissionError) {
       setResult(null);
       setError(

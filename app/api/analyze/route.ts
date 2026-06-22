@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeIntake } from "@/lib/analysis";
 import { prisma } from "@/lib/db";
+import { toPublicAnalysis } from "@/lib/public-analysis";
 import { intakeSchema } from "@/lib/schema";
 import { sendNewCaseNotification } from "@/lib/wecom-case-notification";
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         id: record.id,
-        analysis
+        analysis: toPublicAnalysis(analysis)
       },
       { status: 200 }
     );

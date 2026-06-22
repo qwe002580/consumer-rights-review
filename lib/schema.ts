@@ -160,10 +160,22 @@ export const analysisOutputSchema = modelAnalysisSchema.extend({
   probability: probabilityAssessmentSchema
 });
 
+export const publicAnalysisSchema = z.object({
+  summary: z.string().min(1),
+  favorable_factors: z.array(z.string()),
+  adverse_factors: z.array(z.string()),
+  first_step: z.string().min(1),
+  later_stage_titles: z.array(z.string()),
+  materials: z.array(z.string()),
+  probability: probabilityAssessmentSchema,
+  review_flag: modelAnalysisSchema.shape.review_flag
+});
+
 export type IntakeInput = z.infer<typeof intakeSchema>;
 export type ModelAnalysis = z.infer<typeof modelAnalysisSchema>;
 export type AnalysisOutput = z.infer<typeof analysisOutputSchema>;
 export type LegacyAnalysisOutput = z.infer<typeof legacyAnalysisOutputSchema>;
+export type PublicAnalysis = z.infer<typeof publicAnalysisSchema>;
 
 export const caseUpdateSchema = z.object({
   status: z.enum(["new", "reviewed", "contacted", "on_hold", "closed"]),

@@ -22,12 +22,32 @@ import { POST } from "../app/api/analyze/route";
 
 const analysis = {
   summary: "案件具备继续处理基础。",
-  basis: ["已提交基础交易信息。"],
-  risks: ["仍需核对完整材料。"],
-  next_steps: ["整理付款和沟通记录。"],
+  favorable_factors: ["已提交基础交易信息。"],
+  adverse_factors: ["仍需核对完整材料。"],
+  decisive_issues: ["需要确认承诺内容"],
+  strategy: "INTERNAL_STRATEGY",
+  next_steps: ["整理付款和沟通记录。", "PRIVATE_STEP"],
+  public_stage_titles: ["核对关键材料", "评估后续路径"],
   materials: ["付款记录"],
-  communication: "请商家书面回复处理意见。",
-  review_flag: "contact_soon" as const
+  communication: "FULL_SCRIPT",
+  review_flag: "contact_soon" as const,
+  probability: {
+    full_success: { min: 30, max: 45 },
+    substantive_result: { min: 55, max: 70 },
+    confidence: "moderate" as const,
+    factors: ["付款事实明确"]
+  }
+};
+
+const publicAnalysis = {
+  summary: analysis.summary,
+  favorable_factors: analysis.favorable_factors,
+  adverse_factors: analysis.adverse_factors,
+  first_step: analysis.next_steps[0],
+  later_stage_titles: analysis.public_stage_titles,
+  materials: analysis.materials,
+  probability: analysis.probability,
+  review_flag: analysis.review_flag
 };
 
 const validIntake = {
@@ -90,6 +110,7 @@ describe("POST /api/analyze", () => {
 
     expect(response.status).toBe(200);
     expect(mocks.createCase).toHaveBeenCalledOnce();
+    expect(mocks.createCase.mock.calls[0][0].data.analysis).toEqual(analysis);
     expect(mocks.sendNewCaseNotification).toHaveBeenCalledWith({
       id: "case_123",
       scenario: "education",
@@ -114,6 +135,9 @@ describe("POST /api/analyze", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.analysis).toEqual(analysis);
+    expect(body.analysis).toEqual(publicAnalysis);
+    expect(JSON.stringify(body.analysis)).not.toContain("INTERNAL_STRATEGY");
+    expect(JSON.stringify(body.analysis)).not.toContain("FULL_SCRIPT");
+    expect(JSON.stringify(body.analysis)).not.toContain("PRIVATE_STEP");
   });
 });
