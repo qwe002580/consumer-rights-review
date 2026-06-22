@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useState } from "react";
 import { buildInternalCaseSummary } from "@/lib/case-copy";
 import {
@@ -117,7 +118,7 @@ export function CaseDetail(props: CaseDetailProps) {
   return (
     <section className="report-panel">
       <div className="case-detail-actions">
-        <a className="admin-back-link" href="/cases">返回案件列表</a>
+        <Link className="admin-back-link" href="/cases">返回案件列表</Link>
         <button className="copy-case-button" onClick={handleCopy} type="button">
           一键复制内部案件摘要
         </button>
