@@ -1,16 +1,22 @@
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { AnalysisReport } from "../components/analysis-report";
 
 const sampleResult = {
-  summary: "从现有信息看，案件还需要进一步人工梳理。",
-  basis: ["付款事实基本明确"],
-  risks: ["商家沟通口径前后不一致", "关键承诺材料仍需补充", "平台处理结果不充分"],
-  next_steps: ["先补齐付款记录和聊天截图"],
+  summary: "本案涉及教培退费，付款事实明确，但仍需核对退款承诺。",
+  favorable_factors: ["付款记录能够确认交易事实"],
+  adverse_factors: ["关键退款承诺仍需补充"],
+  first_step: "先整理付款记录、合同和关键聊天截图，并按时间排序。",
+  later_stage_titles: ["核对合同和承诺材料", "评估后续处理路径"],
   materials: ["付款记录", "聊天记录"],
-  communication: "请贵方在合理期限内书面回复。",
+  probability: {
+    full_success: { min: 30, max: 45 },
+    substantive_result: { min: 55, max: 70 },
+    confidence: "moderate" as const,
+    factors: ["付款事实明确"]
+  },
   review_flag: "manual_review" as const
 };
 
@@ -19,49 +25,49 @@ afterEach(() => {
 });
 
 describe("analysis report", () => {
-  it("uses client-facing wording without mentioning ai", () => {
+  it("shows bounded probabilities and limited customer guidance", () => {
     const html = renderToStaticMarkup(
       <AnalysisReport goal="full_refund" result={sampleResult} scenario="education" />
     );
 
-    expect(html).toContain("分析结果");
-    expect(html).toContain("你的纠纷情况");
-    expect(html).toContain("教培退费");
-    expect(html).toContain("全额退款");
-    expect(html).toContain("初步判断");
-    expect(html).toContain("你现在缺少的关键材料");
+    expect(html).toContain("达成全部诉求概率");
+    expect(html).toContain("取得实质处理结果概率");
+    expect(html).toContain("30%–45%");
+    expect(html).toContain("55%–70%");
     expect(html).toContain("第 1 步");
+    expect(html).toContain("后续阶段");
+    expect(html).toContain("核对合同和承诺材料");
+    expect(html).not.toContain("沟通建议");
     expect(html).not.toContain("AI");
   });
 
-  it("shows two focused material-list consultation actions", () => {
+  it("uses the confirmed consultation copy in two cards and one mobile bar", () => {
     process.env.NEXT_PUBLIC_CONSULTATION_URL = "https://work.weixin.qq.com/example";
 
     const html = renderToStaticMarkup(
       <AnalysisReport goal="full_refund" result={sampleResult} scenario="education" />
     );
 
-    expect(html).toContain("领取你的专属材料清单");
-    expect(html).toContain("发送“退款自测”");
-    expect(html).toContain("添加微信领取清单");
+    expect(html).toContain("你的初步结果已生成");
+    expect(html).toContain("进一步核对退款空间和处理重点");
+    expect(html.match(/添加顾问继续评估/g)?.length).toBe(3);
     expect(html).toContain("https://work.weixin.qq.com/example");
-    expect(html.match(/添加微信领取清单/g)?.length).toBe(2);
-    expect(html).not.toContain("结果出来后建议尽快添加");
   });
 
-  it("does not show the consultation button when no consultation url is configured", () => {
+  it("does not show consultation actions without a configured url", () => {
     const html = renderToStaticMarkup(
       <AnalysisReport goal="full_refund" result={sampleResult} scenario="education" />
     );
 
-    expect(html).not.toContain("添加微信领取清单");
+    expect(html).not.toContain("添加顾问继续评估");
   });
 
-  it("defines dedicated styles for result context, steps, and conversion", () => {
+  it("defines probability, signal, and mobile consultation styles", () => {
     const css = readFileSync("app/globals.css", "utf8");
 
-    expect(css).toContain(".result-context");
-    expect(css).toContain(".action-steps");
-    expect(css).toContain(".conversion-card");
+    expect(css).toContain("--signal:");
+    expect(css).toContain(".probability-grid");
+    expect(css).toContain(".consultation-link");
+    expect(css).toContain(".mobile-consultation-bar");
   });
 });
