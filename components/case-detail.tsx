@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useState } from "react";
 import { buildInternalCaseSummary } from "@/lib/case-copy";
+import { copyTextWithFallback } from "@/lib/clipboard";
 import {
   getGoalLabel,
   getPaymentMethodLabel,
@@ -36,12 +37,7 @@ const statusOptions = [
   { value: "closed", label: "已关闭" }
 ];
 
-async function copyText(text: string) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-
+function legacyCopy(text: string) {
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.style.position = "fixed";
@@ -51,7 +47,7 @@ async function copyText(text: string) {
   textarea.select();
   const copied = document.execCommand("copy");
   textarea.remove();
-  if (!copied) throw new Error("Clipboard unavailable");
+  return copied;
 }
 
 function renderList(items: string[], fallback = "暂未生成") {
@@ -102,13 +98,15 @@ export function CaseDetail(props: CaseDetailProps) {
   async function handleCopy() {
     setMessage(null);
     try {
-      await copyText(
-        buildInternalCaseSummary({
+      const summary = buildInternalCaseSummary({
           ...props,
           status,
           operatorNotes
-        })
-      );
+        });
+      await copyTextWithFallback(summary, {
+        writeText: navigator.clipboard?.writeText.bind(navigator.clipboard),
+        legacyCopy
+      });
       setMessage("已复制内部案件摘要。");
     } catch {
       setMessage("复制失败，请手动选择案件内容。");
