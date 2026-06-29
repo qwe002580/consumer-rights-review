@@ -22,31 +22,23 @@ import { POST } from "../app/api/analyze/route";
 
 const analysis = {
   summary: "案件具备继续处理基础。",
+  opportunity: "medium" as const,
+  evidence_completeness: "partial" as const,
   favorable_factors: ["已提交基础交易信息。"],
   adverse_factors: ["仍需核对完整材料。"],
   decisive_issues: ["需要确认承诺内容"],
-  strategy: "INTERNAL_STRATEGY",
-  next_steps: ["整理付款和沟通记录。", "PRIVATE_STEP"],
-  public_stage_titles: ["核对关键材料", "评估后续路径"],
   materials: ["付款记录"],
-  communication: "FULL_SCRIPT",
-  review_flag: "contact_soon" as const,
-  probability: {
-    full_success: { min: 30, max: 45 },
-    substantive_result: { min: 55, max: 70 },
-    confidence: "moderate" as const,
-    factors: ["付款事实明确"]
-  }
+  strategy_direction: "INTERNAL_STRATEGY",
+  review_flag: "contact_soon" as const
 };
 
 const publicAnalysis = {
   summary: analysis.summary,
-  favorable_factors: analysis.favorable_factors,
-  adverse_factors: analysis.adverse_factors,
-  first_step: analysis.next_steps[0],
-  later_stage_titles: analysis.public_stage_titles,
-  materials: analysis.materials,
-  probability: analysis.probability,
+  opportunity: analysis.opportunity,
+  evidenceCompleteness: analysis.evidence_completeness,
+  riskPoints: [...analysis.adverse_factors, ...analysis.decisive_issues],
+  materialGaps: analysis.materials,
+  manualReviewRecommended: true,
   review_flag: analysis.review_flag
 };
 
@@ -62,7 +54,14 @@ const validIntake = {
   evidence: ["payment"],
   obstacles: ["merchant_delay"],
   goal: "full_refund",
-  summary: "仅用于自动测试"
+  summary: "仅用于自动测试",
+  merchantName: "测试教育机构",
+  merchantPromise: "用户称商家承诺可按条件退费",
+  receiveMethod: "page",
+  wechatId: "",
+  phone: "",
+  contactTime: "",
+  willingToSupplement: "yes"
 };
 
 const createdAt = new Date("2026-06-21T08:00:00.000Z");
@@ -137,7 +136,7 @@ describe("POST /api/analyze", () => {
     expect(response.status).toBe(200);
     expect(body.analysis).toEqual(publicAnalysis);
     expect(JSON.stringify(body.analysis)).not.toContain("INTERNAL_STRATEGY");
-    expect(JSON.stringify(body.analysis)).not.toContain("FULL_SCRIPT");
-    expect(JSON.stringify(body.analysis)).not.toContain("PRIVATE_STEP");
+    expect(body.analysis).not.toHaveProperty("probability");
+    expect(body.analysis).not.toHaveProperty("first_step");
   });
 });

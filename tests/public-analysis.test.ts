@@ -45,4 +45,37 @@ describe("public analysis boundary", () => {
     }
     expect(serialized).not.toContain("INTERNAL_STRATEGY");
   });
+
+  it("replaces unsafe prose inside allowlisted fields with diagnostic fallbacks", () => {
+    const result = toPublicAnalysis({
+      ...internalAnalysis,
+      summary: "成功率95%，保证全额退款。",
+      adverse_factors: ["第一步拨打12315并复制以下投诉模板", "合同条款仍需核验"],
+      decisive_issues: ["起诉状模板如下：原告应当……"],
+      materials: ["点击平台入口后按步骤提交", "付款记录"]
+    });
+    const serialized = JSON.stringify(result);
+
+    expect(result.summary).toBe("当前信息需要进一步核验后形成诊断结论。");
+    expect(result.riskPoints).toEqual([
+      "该风险点包含非诊断内容，需要人工复核。",
+      "合同条款仍需核验",
+      "该风险点包含非诊断内容，需要人工复核。"
+    ]);
+    expect(result.materialGaps).toEqual([
+      "该材料项包含非诊断内容，需要人工复核。",
+      "付款记录"
+    ]);
+    expect(serialized).not.toMatch(/95%|保证|12315|投诉模板|起诉状模板|平台入口/);
+  });
+
+  it("recommends manual review when unsafe model prose is removed", () => {
+    const result = toPublicAnalysis({
+      ...internalAnalysis,
+      summary: "保证退款成功",
+      review_flag: "self_service"
+    });
+
+    expect(result.manualReviewRecommended).toBe(true);
+  });
 });

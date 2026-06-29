@@ -100,7 +100,14 @@ const initialState: IntakeFormState = {
   agreementStatus: "",
   installmentStatus: "",
   platformResult: "",
-  missingEvidenceType: ""
+  missingEvidenceType: "",
+  merchantName: "",
+  merchantPromise: "",
+  receiveMethod: "page",
+  wechatId: "",
+  phone: "",
+  contactTime: "",
+  willingToSupplement: "unknown"
 };
 
 function toggleValue(values: string[], value: string) {

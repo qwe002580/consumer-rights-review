@@ -201,10 +201,17 @@ export const legacyAnalysisOutputSchema = z.object({
   ])
 });
 
+export const evidenceCompletenessSchema = z.enum([
+  "complete",
+  "partial",
+  "insufficient",
+  "review_needed"
+]);
+
 export const modelAnalysisSchema = z.object({
   summary: z.string().min(1),
   opportunity: z.enum(["high", "medium_high", "medium", "low", "unclear"]),
-  evidence_completeness: z.enum(["complete", "partial", "insufficient", "review_needed"]),
+  evidence_completeness: evidenceCompletenessSchema,
   favorable_factors: z.array(z.string()).min(1),
   adverse_factors: z.array(z.string()).min(1),
   decisive_issues: z.array(z.string()).min(1),
@@ -223,7 +230,7 @@ export const analysisOutputSchema = modelAnalysisSchema;
 export const publicAnalysisSchema = z.object({
   summary: z.string().min(1),
   opportunity: modelAnalysisSchema.shape.opportunity,
-  evidenceCompleteness: z.enum(["complete", "partial", "insufficient", "review_needed"]),
+  evidenceCompleteness: evidenceCompletenessSchema,
   riskPoints: z.array(z.string()).max(4),
   materialGaps: z.array(z.string()).max(4),
   manualReviewRecommended: z.boolean(),

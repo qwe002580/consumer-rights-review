@@ -46,9 +46,20 @@ function ConsultationCard({ className, url }: { className: string; url: string }
   );
 }
 
-function rangeLabel(range: { min: number; max: number }) {
-  return `${range.min}%–${range.max}%`;
-}
+const opportunityLabels: Record<PublicAnalysis["opportunity"], string> = {
+  high: "高",
+  medium_high: "中高",
+  medium: "中等",
+  low: "低",
+  unclear: "待核验"
+};
+
+const evidenceCompletenessLabels: Record<PublicAnalysis["evidenceCompleteness"], string> = {
+  complete: "较完整",
+  partial: "部分完整",
+  insufficient: "不足",
+  review_needed: "需要复核"
+};
 
 export function AnalysisReport({
   result,
@@ -113,29 +124,13 @@ export function AnalysisReport({
         </div>
       </article>
 
-      <article className="report-card probability-card">
-        <div className="probability-heading">
-          <div>
-            <span>基于当前信息</span>
-            <h3>处理结果概率区间</h3>
-          </div>
-          <small>材料变化会影响区间</small>
+      <article className="report-card result-context">
+        <h3>诊断概览</h3>
+        <div className="result-context-grid">
+          <div><span>处理机会</span><strong>{opportunityLabels[result.opportunity]}</strong></div>
+          <div><span>材料完整度</span><strong>{evidenceCompletenessLabels[result.evidenceCompleteness]}</strong></div>
+          <div><span>人工复核</span><strong>{result.manualReviewRecommended ? "建议人工复核" : "暂不需要"}</strong></div>
         </div>
-        <div className="probability-grid">
-          <div>
-            <span>达成全部诉求概率</span>
-            <strong>{rangeLabel(result.probability.full_success)}</strong>
-            <p>实现你填写的完整目标诉求</p>
-          </div>
-          <div className="probability-primary">
-            <span>取得实质处理结果概率</span>
-            <strong>{rangeLabel(result.probability.substantive_result)}</strong>
-            <p>获得退款、减免、补偿或合同调整等实质结果</p>
-          </div>
-        </div>
-        <p className="probability-note">
-          以上为当前信息下的评估区间，不构成结果承诺；补充关键材料后可能发生变化。
-        </p>
       </article>
 
       {consultationUrl ? (
@@ -147,43 +142,14 @@ export function AnalysisReport({
         <p>{result.summary}</p>
       </article>
 
-      <div className="report-grid">
-        <article className="report-card">
-          <h3>当前有利因素</h3>
-          {renderList(result.favorable_factors, "暂未识别到明确有利因素。")}
-        </article>
-        <article className="report-card">
-          <h3>主要风险</h3>
-          {renderList(result.adverse_factors, "暂未识别到明确风险。")}
-        </article>
-      </div>
+      <article className="report-card">
+        <h3>主要风险</h3>
+        {renderList(result.riskPoints, "暂未识别到明确风险。")}
+      </article>
 
       <article className="report-card materials-card">
         <h3>你现在缺少的关键材料</h3>
-        {renderList(result.materials, "根据目前填写信息，暂未识别到明确缺失材料。")}
-      </article>
-
-      <article className="report-card action-card">
-        <h3>你现在可以先做什么</h3>
-        <ol className="action-steps">
-          <li>
-            <span>第 1 步</span>
-            <p>{result.first_step}</p>
-          </li>
-        </ol>
-      </article>
-
-      <article className="report-card later-stages-card">
-        <h3>后续阶段</h3>
-        <div className="later-stage-list">
-          {result.later_stage_titles.map((title, index) => (
-            <div key={title}>
-              <span>{String(index + 2).padStart(2, "0")}</span>
-              <strong>{title}</strong>
-            </div>
-          ))}
-        </div>
-        <p>后续顺序和具体做法需要结合完整材料进一步确认。</p>
+        {renderList(result.materialGaps, "根据目前填写信息，暂未识别到明确缺失材料。")}
       </article>
 
       {consultationUrl ? (
