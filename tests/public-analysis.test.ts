@@ -78,4 +78,47 @@ describe("public analysis boundary", () => {
 
     expect(result.manualReviewRecommended).toBe(true);
   });
+
+  it.each([
+    "平台投诉已被驳回",
+    "商家退款流程尚未完成",
+    "商家承诺退款但尚未履行",
+    "保证条款的适用范围仍需核验",
+    "点击记录可用于核对页面内容",
+    "诉讼材料是否齐全仍待人工判断"
+  ])("preserves legitimate diagnostic wording: %s", (diagnostic) => {
+    const result = toPublicAnalysis({
+      ...internalAnalysis,
+      adverse_factors: [diagnostic],
+      decisive_issues: [],
+      review_flag: "self_service"
+    });
+
+    expect(result.riskPoints).toEqual([diagnostic]);
+  });
+
+  it.each([
+    "照下面模板投诉",
+    "第一步点击平台入口",
+    "胜诉率九成",
+    "百分百退款",
+    "保证一定退款",
+    "照 下 面 模 板 投 诉",
+    "第 一 步 点 击 平 台 入 口",
+    "胜 诉 率 九 成",
+    "百 分 百 退 款",
+    "保 证 一 定 退 款"
+  ])("blocks procedural, promissory, and spaced evasion wording: %s", (unsafe) => {
+    const result = toPublicAnalysis({
+      ...internalAnalysis,
+      adverse_factors: [unsafe],
+      decisive_issues: [],
+      review_flag: "self_service"
+    });
+
+    expect(result.riskPoints).toEqual([
+      "该风险点包含非诊断内容，需要人工复核。"
+    ]);
+    expect(result.manualReviewRecommended).toBe(true);
+  });
 });
