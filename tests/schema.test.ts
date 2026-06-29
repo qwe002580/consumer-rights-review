@@ -76,22 +76,35 @@ describe("schema labels", () => {
         contactTime: ""
       }).success
     ).toBe(false);
+    for (const contactTime of ["now", "30m", "afternoon", "evening", "tomorrow"]) {
+      expect(
+        intakeSchema.safeParse({
+          ...validIntake,
+          receiveMethod: "phone",
+          phone: "13800138000",
+          contactTime
+        }).success
+      ).toBe(true);
+    }
+  });
+
+  it("allows an empty contact time for non-phone delivery", () => {
+    for (const receiveMethod of ["wechat", "sms", "page"] as const) {
+      expect(
+        intakeSchema.safeParse({
+          ...validIntake,
+          receiveMethod,
+          phone: receiveMethod === "sms" ? "13800138000" : "",
+          contactTime: ""
+        }).success
+      ).toBe(true);
+    }
+  });
+
+  it("rejects contact times outside the allowed values", () => {
     expect(
-      intakeSchema.safeParse({
-        ...validIntake,
-        receiveMethod: "phone",
-        phone: "13800138000",
-        contactTime: "weekend"
-      }).success
+      intakeSchema.safeParse({ ...validIntake, contactTime: "weekend" }).success
     ).toBe(false);
-    expect(
-      intakeSchema.safeParse({
-        ...validIntake,
-        receiveMethod: "phone",
-        phone: "13800138000",
-        contactTime: "tomorrow"
-      }).success
-    ).toBe(true);
   });
 
   it("requires merchant facts but accepts an unclear promise", () => {

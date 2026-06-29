@@ -112,7 +112,10 @@ export const intakeSchema = z.object({
   receiveMethod: z.enum(["wechat", "sms", "phone", "page"]),
   wechatId: z.string().default(""),
   phone: z.string().default(""),
-  contactTime: z.string().default(""),
+  contactTime: z.union([
+    z.enum(["now", "30m", "afternoon", "evening", "tomorrow"]),
+    z.literal("")
+  ]).default(""),
   willingToSupplement: z.enum(["yes", "not_now", "unknown"])
 }).superRefine((value, ctx) => {
   if (value.receiveMethod === "wechat" && !value.wechatId.trim()) {
