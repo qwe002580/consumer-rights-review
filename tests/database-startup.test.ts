@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -6,6 +6,47 @@ import { PrismaClient } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 
 describe("production database startup", () => {
+  it("initializes from the packaged startup script without the Prisma CLI", async () => {
+    const temporaryDirectory = mkdtempSync(path.join(tmpdir(), "case-review-artifact-"));
+    const artifactDirectory = path.join(temporaryDirectory, "standalone");
+    const databasePath = path.join(artifactDirectory, "data", "cases.db");
+
+    try {
+      mkdirSync(artifactDirectory, { recursive: true });
+      cpSync("scripts/start-production.mjs", path.join(artifactDirectory, "start-production.mjs"));
+      symlinkSync(path.resolve("node_modules"), path.join(artifactDirectory, "node_modules"), "dir");
+
+      const runPackagedStartup = () =>
+        spawnSync(process.execPath, ["start-production.mjs"], {
+          cwd: artifactDirectory,
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            DATABASE_INIT_ONLY: "1",
+            DATABASE_URL: "file:./data/cases.db",
+            PATH: temporaryDirectory
+          }
+        });
+      const result = runPackagedStartup();
+
+      expect(result.status, result.stderr).toBe(0);
+      const repeatedResult = runPackagedStartup();
+      expect(repeatedResult.status, repeatedResult.stderr).toBe(0);
+
+      const prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: `file:${databasePath}`
+          }
+        }
+      });
+      await expect(prisma.case.count()).resolves.toBe(0);
+      await prisma.$disconnect();
+    } finally {
+      rmSync(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
+
   it("creates the database directory and Case table before serving requests", async () => {
     const temporaryDirectory = mkdtempSync(path.join(tmpdir(), "case-review-db-"));
     const databasePath = path.join(temporaryDirectory, "data", "cases.db");
