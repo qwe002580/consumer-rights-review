@@ -3,12 +3,13 @@ import type { AnalysisOutput, PublicAnalysis } from "./schema";
 export function toPublicAnalysis(analysis: AnalysisOutput): PublicAnalysis {
   return {
     summary: analysis.summary,
-    favorable_factors: analysis.favorable_factors.slice(0, 3),
-    adverse_factors: analysis.adverse_factors.slice(0, 3),
-    first_step: analysis.next_steps[0],
-    later_stage_titles: analysis.public_stage_titles,
-    materials: analysis.materials.slice(0, 5),
-    probability: analysis.probability,
+    opportunity: analysis.opportunity,
+    evidenceCompleteness: analysis.evidence_completeness,
+    riskPoints: [...analysis.adverse_factors, ...analysis.decisive_issues].slice(0, 4),
+    materialGaps: analysis.materials.slice(0, 4),
+    manualReviewRecommended:
+      analysis.review_flag !== "self_service" ||
+      analysis.evidence_completeness === "review_needed",
     review_flag: analysis.review_flag
   };
 }

@@ -203,14 +203,13 @@ export const legacyAnalysisOutputSchema = z.object({
 
 export const modelAnalysisSchema = z.object({
   summary: z.string().min(1),
+  opportunity: z.enum(["high", "medium_high", "medium", "low", "unclear"]),
+  evidence_completeness: z.enum(["complete", "partial", "insufficient", "review_needed"]),
   favorable_factors: z.array(z.string()).min(1),
   adverse_factors: z.array(z.string()).min(1),
   decisive_issues: z.array(z.string()).min(1),
-  strategy: z.string().min(1),
-  next_steps: z.array(z.string()).min(2),
-  public_stage_titles: z.array(z.string()).min(1).max(4),
   materials: z.array(z.string()).min(1),
-  communication: z.string().min(1),
+  strategy_direction: z.string().min(1),
   review_flag: z.enum([
     "self_service",
     "manual_review",
@@ -219,18 +218,15 @@ export const modelAnalysisSchema = z.object({
   ])
 });
 
-export const analysisOutputSchema = modelAnalysisSchema.extend({
-  probability: probabilityAssessmentSchema
-});
+export const analysisOutputSchema = modelAnalysisSchema;
 
 export const publicAnalysisSchema = z.object({
   summary: z.string().min(1),
-  favorable_factors: z.array(z.string()),
-  adverse_factors: z.array(z.string()),
-  first_step: z.string().min(1),
-  later_stage_titles: z.array(z.string()),
-  materials: z.array(z.string()),
-  probability: probabilityAssessmentSchema,
+  opportunity: modelAnalysisSchema.shape.opportunity,
+  evidenceCompleteness: z.enum(["complete", "partial", "insufficient", "review_needed"]),
+  riskPoints: z.array(z.string()).max(4),
+  materialGaps: z.array(z.string()).max(4),
+  manualReviewRecommended: z.boolean(),
   review_flag: modelAnalysisSchema.shape.review_flag
 });
 
@@ -240,13 +236,54 @@ export type AnalysisOutput = z.infer<typeof analysisOutputSchema>;
 export type LegacyAnalysisOutput = z.infer<typeof legacyAnalysisOutputSchema>;
 export type PublicAnalysis = z.infer<typeof publicAnalysisSchema>;
 
-export type StoredAnalysisDisplay = Omit<AnalysisOutput, "probability"> & {
+export type StoredAnalysisDisplay = {
+  summary: string;
+  favorable_factors: string[];
+  adverse_factors: string[];
+  decisive_issues: string[];
+  strategy: string;
+  next_steps: string[];
+  public_stage_titles: string[];
+  materials: string[];
+  communication: string;
+  review_flag: ModelAnalysis["review_flag"];
   probability: ProbabilityAssessment | null;
 };
 
+const priorAnalysisOutputSchema = z.object({
+  summary: z.string().min(1),
+  favorable_factors: z.array(z.string()),
+  adverse_factors: z.array(z.string()),
+  decisive_issues: z.array(z.string()),
+  strategy: z.string(),
+  next_steps: z.array(z.string()),
+  public_stage_titles: z.array(z.string()),
+  materials: z.array(z.string()),
+  communication: z.string(),
+  review_flag: modelAnalysisSchema.shape.review_flag,
+  probability: probabilityAssessmentSchema.optional()
+});
+
 export function normalizeStoredAnalysis(value: unknown): StoredAnalysisDisplay | null {
-  const current = analysisOutputSchema.safeParse(value);
-  if (current.success) return current.data;
+  const current = modelAnalysisSchema.safeParse(value);
+  if (current.success) {
+    return {
+      summary: current.data.summary,
+      favorable_factors: current.data.favorable_factors,
+      adverse_factors: current.data.adverse_factors,
+      decisive_issues: current.data.decisive_issues,
+      strategy: current.data.strategy_direction,
+      next_steps: [],
+      public_stage_titles: [],
+      materials: current.data.materials,
+      communication: "新案件仅生成诊断，不生成沟通话术。",
+      review_flag: current.data.review_flag,
+      probability: null
+    };
+  }
+
+  const prior = priorAnalysisOutputSchema.safeParse(value);
+  if (prior.success) return { ...prior.data, probability: prior.data.probability ?? null };
 
   const legacy = legacyAnalysisOutputSchema.safeParse(value);
   if (!legacy.success) return null;

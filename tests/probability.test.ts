@@ -15,10 +15,22 @@ const intake = (overrides: Partial<IntakeInput> = {}): IntakeInput => ({
   obstacles: [],
   goal: "full_refund",
   summary: "宣传承诺与实际服务不一致",
+  merchantName: "测试商家",
+  merchantPromise: "承诺服务内容与宣传一致",
+  receiveMethod: "page",
+  wechatId: "",
+  phone: "",
+  contactTime: "",
+  willingToSupplement: "yes",
   ...overrides
-});
+} as IntakeInput);
 
 describe("probability assessment", () => {
+  it("is legacy/internal-only and absent from the public schema", async () => {
+    const { publicAnalysisSchema } = await import("../lib/schema");
+    expect(publicAnalysisSchema.keyof().options).not.toContain("probability");
+  });
+
   it("returns stable bounded ranges in the correct order", () => {
     const first = calculateProbabilityAssessment(intake(), {
       favorableCount: 3,
