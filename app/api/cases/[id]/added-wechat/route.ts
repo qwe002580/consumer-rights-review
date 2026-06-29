@@ -23,28 +23,42 @@ export async function POST(
     return NextResponse.json({ error: "INVALID_ASSESSMENT" }, { status: 400 });
   }
 
-  const record = await prisma.case.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      assessmentNo: true,
-      addedWechat: true
-    }
-  });
-
-  if (!record || record.assessmentNo !== assessmentNo) {
-    return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-  }
-
-  if (!record.addedWechat) {
-    await prisma.case.update({
+  try {
+    const record = await prisma.case.findUnique({
       where: { id },
-      data: {
-        addedWechat: true,
-        addedWechatAt: new Date()
+      select: {
+        id: true,
+        assessmentNo: true,
+        addedWechat: true
       }
     });
-  }
 
-  return NextResponse.json({ addedWechat: true }, { status: 200 });
+    if (!record || record.assessmentNo !== assessmentNo) {
+      return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    }
+
+    if (!record.addedWechat) {
+      await prisma.case.updateMany({
+        where: {
+          id,
+          assessmentNo,
+          addedWechat: false
+        },
+        data: {
+          addedWechat: true,
+          addedWechatAt: new Date()
+        }
+      });
+    }
+
+    return NextResponse.json({ addedWechat: true }, { status: 200 });
+  } catch (error) {
+    console.error("Added-WeChat marker failed", error);
+    return NextResponse.json({
+      error: "ADDED_WECHAT_UPDATE_FAILED",
+      details: "暂时无法记录添加状态，请稍后重试。"
+    }, {
+      status: 500
+    });
+  }
 }

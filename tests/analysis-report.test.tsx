@@ -1,7 +1,10 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterEach, describe, expect, it } from "vitest";
-import { AnalysisReport } from "../components/analysis-report";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  AnalysisReport,
+  copyAssessmentNumber
+} from "../components/analysis-report";
 
 const sampleResult = {
   summary: "本案涉及教培退费，付款事实明确，但仍需核对退款承诺。",
@@ -60,6 +63,38 @@ describe("analysis report", () => {
     expect(html.match(/添加企业微信，免费复核/g)?.length).toBe(3);
     expect(html).toContain("https://work.weixin.qq.com/example");
     expect(html).toContain("复制评估编号");
+  });
+
+  it("limits public risk and material lists to four items", () => {
+    const html = renderToStaticMarkup(
+      <AnalysisReport
+        assessmentNo="11399-20260629-0081"
+        goal="full_refund"
+        result={{
+          ...sampleResult,
+          riskPoints: ["风险1", "风险2", "风险3", "风险4", "风险5"],
+          materialGaps: ["材料1", "材料2", "材料3", "材料4", "材料5"]
+        }}
+        scenario="education"
+      />
+    );
+
+    expect(html).toContain("风险4");
+    expect(html).not.toContain("风险5");
+    expect(html).toContain("材料4");
+    expect(html).not.toContain("材料5");
+  });
+
+  it("copies only the assessment number", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+
+    await copyAssessmentNumber("11399-20260629-0081", {
+      writeText,
+      legacyCopy: vi.fn()
+    });
+
+    expect(writeText).toHaveBeenCalledWith("11399-20260629-0081");
+    expect(writeText).not.toHaveBeenCalledWith(expect.stringContaining("本案涉及"));
   });
 
   it("does not show consultation actions without a configured url", () => {

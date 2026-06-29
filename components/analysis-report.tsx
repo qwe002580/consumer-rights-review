@@ -7,6 +7,7 @@ import {
   getScenarioLabel,
   type PublicAnalysis
 } from "@/lib/schema";
+import { copyTextWithFallback } from "@/lib/clipboard";
 import { consultationLabel, getConsultationUrl } from "@/lib/site-config";
 
 type AnalysisReportProps = {
@@ -20,8 +21,15 @@ type AnalysisReportProps = {
   loading?: boolean;
 };
 
+export async function copyAssessmentNumber(
+  assessmentNo: string,
+  strategies: Parameters<typeof copyTextWithFallback>[1]
+) {
+  await copyTextWithFallback(assessmentNo, strategies);
+}
+
 function renderList(items: string[], fallback: string) {
-  const visibleItems = items.length ? items : [fallback];
+  const visibleItems = items.length ? items.slice(0, 4) : [fallback];
   return (
     <ul className="report-list">
       {visibleItems.map((item) => (
@@ -54,22 +62,39 @@ const leadScoreCopy: Record<string, string> = {
 
 function CopyAssessmentButton({ assessmentNo }: { assessmentNo?: string }) {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
   if (!assessmentNo) return null;
   const valueToCopy = assessmentNo;
 
   async function copy() {
     try {
-      await navigator.clipboard?.writeText(valueToCopy);
+      await copyAssessmentNumber(valueToCopy, {
+        writeText: navigator.clipboard?.writeText.bind(navigator.clipboard),
+        legacyCopy: (text) => {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.setAttribute("readonly", "");
+          textarea.style.left = "-9999px";
+          textarea.style.position = "fixed";
+          document.body.appendChild(textarea);
+          textarea.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(textarea);
+          return ok;
+        }
+      });
       setCopied(true);
+      setFailed(false);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       setCopied(false);
+      setFailed(true);
     }
   }
 
   return (
     <button className="copy-assessment-button" type="button" onClick={copy}>
-      {copied ? "已复制编号" : "复制评估编号"}
+      {copied ? "已复制编号" : failed ? "复制失败，请手动保存编号" : "复制评估编号"}
     </button>
   );
 }
