@@ -3,10 +3,7 @@ import type { AnalysisOutput, PublicAnalysis } from "./schema";
 const prohibitedPublicPatterns = [
   /\d+(?:\.\d+)?%/,
   /百分(?:之)?[零〇一二三四五六七八九十百千万两\d]+/,
-  /(?:胜诉|退款|成功|达成诉求)率(?:\d+(?:\.\d+)?%?|[零〇一二三四五六七八九十百两]+成?)/,
-  /(?:保证|确保|承诺)(?:一定|必定|肯定|可以|能够|全额|成功)+(?:退款|胜诉|成功|达成)/,
-  /(?:保证|确保)(?:退款|胜诉)(?:成功|无疑)/,
-  /(?:一定|必定|肯定|百分百|包)(?:可以|能够)?(?:退款|胜诉|成功)/,
+  /(?:胜诉|退款|退费|成功|达成诉求)(?:率|概率)(?:\d+(?:\.\d+)?%?|[零〇一二三四五六七八九十百两]+成?)/,
   /(?:照|按|复制|套用|使用).{0,12}(?:模板|话术)/,
   /(?:投诉|起诉状?|诉讼|沟通).{0,8}(?:模板|话术)/,
   /(?:模板|话术).{0,8}(?:投诉|起诉|诉讼|沟通|回复|发送)/,
@@ -17,6 +14,15 @@ const prohibitedPublicPatterns = [
   /按(?:照)?.{0,8}(?:步骤|流程).{0,8}(?:提交|操作|投诉|起诉)/
 ];
 
+const prohibitedPromisePatterns = [
+  /(?:保证|确保|承诺)(?:一定|必定|肯定|可以|能够|全额|成功)+(?:退款|退费|胜诉|成功|达成)/,
+  /(?:保证|确保)(?:退款|退费|胜诉)(?:成功|无疑)/,
+  /(?:一定|必定|肯定|百分百|包)(?:可以|能够)?(?:退款|退费|胜诉|成功)/
+];
+
+const attributedUnfulfilledPromise =
+  /(?:商家|机构|培训机构|平台|销售|客服).{0,6}(?:表示|声称|承诺|保证).{0,16}(?:退款|退费).{0,16}(?:但|却|仍).{0,12}(?:未|没有|尚未|拒绝|一直没有).{0,12}(?:履行|兑现|退款|退费|处理)/;
+
 function normalizeForSafetyCheck(value: string) {
   return value
     .normalize("NFKC")
@@ -26,7 +32,14 @@ function normalizeForSafetyCheck(value: string) {
 
 function containsProhibitedPublicContent(value: string) {
   const normalized = normalizeForSafetyCheck(value);
-  return prohibitedPublicPatterns.some((pattern) => pattern.test(normalized));
+  if (prohibitedPublicPatterns.some((pattern) => pattern.test(normalized))) {
+    return true;
+  }
+
+  return (
+    !attributedUnfulfilledPromise.test(normalized) &&
+    prohibitedPromisePatterns.some((pattern) => pattern.test(normalized))
+  );
 }
 
 function sanitizePublicText(value: string, fallback: string) {
