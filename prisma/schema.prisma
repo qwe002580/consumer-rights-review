@@ -8,20 +8,31 @@ datasource db {
 }
 
 model Case {
-  id            String   @id @default(cuid())
-  clientName    String
-  contact       String
-  scenario      String
-  amount        Int
-  purchaseDate  DateTime
-  paymentMethod String
-  stage         String
-  goal          String
-  intake        Json
-  analysis      Json?
-  reviewFlag    String?
-  status        String   @default("new")
-  operatorNotes String   @default("")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  clientName          String
+  contact             String
+  scenario            String
+  amount              Int
+  purchaseDate        DateTime
+  paymentMethod       String
+  stage               String
+  goal                String
+  intake              Json
+  analysis            Json?
+  reviewFlag          String?
+  status              String    @default("new")
+  operatorNotes       String    @default("")
+  assessmentNo        String?   @unique
+  receiveMethod       String    @default("legacy")
+  wechatId            String    @default("")
+  phone               String    @default("")
+  contactTime         String    @default("")
+  merchantName        String    @default("")
+  merchantPromise     String    @default("")
+  willingToSupplement String    @default("unknown")
+  leadScore           String    @default("C")
+  addedWechat         Boolean   @default(false)
+  addedWechatAt       DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }

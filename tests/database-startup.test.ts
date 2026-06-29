@@ -39,4 +39,99 @@ describe("production database startup", () => {
       rmSync(temporaryDirectory, { recursive: true, force: true });
     }
   });
+
+  it("adds conversion lead columns without losing legacy Case rows", async () => {
+    const temporaryDirectory = mkdtempSync(path.join(tmpdir(), "case-review-migration-"));
+    const databasePath = path.join(temporaryDirectory, "cases.db");
+    const databaseUrl = `file:${databasePath}`;
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: databaseUrl
+        }
+      }
+    });
+
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE "Case" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "clientName" TEXT NOT NULL,
+          "contact" TEXT NOT NULL,
+          "scenario" TEXT NOT NULL,
+          "amount" INTEGER NOT NULL,
+          "purchaseDate" DATETIME NOT NULL,
+          "paymentMethod" TEXT NOT NULL,
+          "stage" TEXT NOT NULL,
+          "goal" TEXT NOT NULL,
+          "intake" JSONB NOT NULL,
+          "analysis" JSONB,
+          "reviewFlag" TEXT,
+          "status" TEXT NOT NULL DEFAULT 'new',
+          "operatorNotes" TEXT NOT NULL DEFAULT '',
+          "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" DATETIME NOT NULL
+        )
+      `);
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO "Case" (
+          "id", "clientName", "contact", "scenario", "amount", "purchaseDate",
+          "paymentMethod", "stage", "goal", "intake", "createdAt", "updatedAt"
+        ) VALUES (
+          'legacy-case', 'Legacy Client', 'legacy@example.com', 'refund', 1200,
+          '2025-01-02T00:00:00.000Z', 'card', 'intake', 'recover', '{}',
+          '2025-01-02T00:00:00.000Z', '2025-01-02T00:00:00.000Z'
+        )
+      `);
+      await prisma.$disconnect();
+
+      const result = spawnSync(process.execPath, ["scripts/start-production.mjs"], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          DATABASE_INIT_ONLY: "1",
+          DATABASE_URL: databaseUrl
+        }
+      });
+
+      expect(result.status, result.stderr).toBe(0);
+
+      const migratedPrisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: databaseUrl
+          }
+        }
+      });
+      const columns = await migratedPrisma.$queryRawUnsafe<Array<{ name: string }>>(
+        'PRAGMA table_info("Case")'
+      );
+      const expectedColumns = [
+        "assessmentNo",
+        "receiveMethod",
+        "wechatId",
+        "phone",
+        "contactTime",
+        "merchantName",
+        "merchantPromise",
+        "willingToSupplement",
+        "leadScore",
+        "addedWechat",
+        "addedWechatAt"
+      ];
+
+      expect(columns.map(({ name }) => name)).toEqual(expect.arrayContaining(expectedColumns));
+      await expect(
+        migratedPrisma.$queryRawUnsafe<Array<{ id: string; clientName: string }>>(
+          'SELECT "id", "clientName" FROM "Case" WHERE "id" = ?',
+          "legacy-case"
+        )
+      ).resolves.toEqual([{ id: "legacy-case", clientName: "Legacy Client" }]);
+      await migratedPrisma.$disconnect();
+    } finally {
+      await prisma.$disconnect();
+      rmSync(temporaryDirectory, { recursive: true, force: true });
+    }
+  });
 });
