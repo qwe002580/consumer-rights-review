@@ -21,7 +21,7 @@ const prohibitedPromisePatterns = [
 ];
 
 const attributedUnfulfilledPromise =
-  /(?:商家|机构|培训机构|平台|销售|客服).{0,6}(?:表示|声称|承诺|保证).{0,16}(?:退款|退费).{0,16}(?:但|却|仍).{0,12}(?:未|没有|尚未|拒绝|一直没有).{0,12}(?:履行|兑现|退款|退费|处理)/;
+  /(?:商家|机构|培训机构|平台|销售|客服).{0,6}?(?:表示|声称|承诺|保证).{0,16}?(?:退款|退费).{0,16}?(?:但|却|仍).{0,12}?(?:未|没有|尚未|拒绝|一直没有).{0,12}?(?:履行|兑现|退款|退费|处理)/;
 
 function normalizeForSafetyCheck(value: string) {
   return value
@@ -33,13 +33,33 @@ function normalizeForSafetyCheck(value: string) {
 
 function containsProhibitedPublicContent(value: string) {
   const normalized = normalizeForSafetyCheck(value);
-  const clauses = normalized.split(/[;；。.!！?？]+/).filter(Boolean);
+  const clauses = normalized.split(/[;；,，、。.!！?？]+/).filter(Boolean);
+  const compact = normalized.replace(/[;；,，、。.!！?？:：]+/g, "");
+  const compactWithoutAttributedMerchantFacts = compact.replace(
+    attributedUnfulfilledPromise,
+    ""
+  );
+
+  if (
+    prohibitedPublicPatterns.some(
+      (pattern) => pattern.test(normalized) || pattern.test(compact)
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    prohibitedPromisePatterns.some((pattern) =>
+      pattern.test(compactWithoutAttributedMerchantFacts)
+    )
+  ) {
+    return true;
+  }
 
   return clauses.some(
     (clause) =>
-      prohibitedPublicPatterns.some((pattern) => pattern.test(clause)) ||
-      (!attributedUnfulfilledPromise.test(clause) &&
-        prohibitedPromisePatterns.some((pattern) => pattern.test(clause)))
+      !attributedUnfulfilledPromise.test(clause) &&
+      prohibitedPromisePatterns.some((pattern) => pattern.test(clause))
   );
 }
 

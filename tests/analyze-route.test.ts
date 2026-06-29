@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   analyzeIntake: vi.fn(),
+  calculateLeadScore: vi.fn(),
   createCase: vi.fn(),
+  generateAssessmentNumber: vi.fn(),
   sendNewCaseNotification: vi.fn()
 }));
 
@@ -12,6 +14,14 @@ vi.mock("@/lib/analysis", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: { case: { create: mocks.createCase } }
+}));
+
+vi.mock("@/lib/assessment-number", () => ({
+  generateAssessmentNumber: mocks.generateAssessmentNumber
+}));
+
+vi.mock("@/lib/lead-score", () => ({
+  calculateLeadScore: mocks.calculateLeadScore
 }));
 
 vi.mock("@/lib/wecom-case-notification", () => ({
@@ -74,10 +84,19 @@ describe("POST /api/analyze", () => {
       "https://consumer-rights-review.zeabur.app"
     );
     mocks.analyzeIntake.mockResolvedValue(analysis);
+    mocks.calculateLeadScore.mockReturnValue({
+      points: 9,
+      grade: "A",
+      reasons: ["争议金额较高 +2"]
+    });
+    mocks.generateAssessmentNumber.mockReturnValue("11399-20260621-0001");
     mocks.createCase.mockResolvedValue({
       id: "case_123",
+      assessmentNo: "11399-20260621-0001",
       scenario: "education",
       amount: 6800,
+      receiveMethod: "page",
+      leadScore: "A",
       stage: "deadlock",
       reviewFlag: "contact_soon",
       createdAt
@@ -109,15 +128,39 @@ describe("POST /api/analyze", () => {
 
     expect(response.status).toBe(200);
     expect(mocks.createCase).toHaveBeenCalledOnce();
-    expect(mocks.createCase.mock.calls[0][0].data.analysis).toEqual(analysis);
+    expect(mocks.createCase.mock.calls[0][0].data).toEqual(
+      expect.objectContaining({
+        assessmentNo: "11399-20260621-0001",
+        receiveMethod: "page",
+        merchantName: "测试教育机构",
+        merchantPromise: "用户称商家承诺可按条件退费",
+        wechatId: "",
+        phone: "",
+        contactTime: "",
+        willingToSupplement: "yes",
+        leadScore: "A",
+        intake: validIntake,
+        analysis,
+        reviewFlag: "contact_soon"
+      })
+    );
     expect(mocks.sendNewCaseNotification).toHaveBeenCalledWith({
       id: "case_123",
+      assessmentNo: "11399-20260621-0001",
+      leadScore: "A",
+      receiveMethod: "page",
       scenario: "education",
       amount: 6800,
       stage: "deadlock",
       reviewFlag: "contact_soon",
       createdAt,
       siteUrl: "https://consumer-rights-review.zeabur.app"
+    });
+    await expect(response.json()).resolves.toEqual({
+      id: "case_123",
+      assessmentNo: "11399-20260621-0001",
+      leadScore: "A",
+      analysis: publicAnalysis
     });
   });
 
@@ -138,5 +181,86 @@ describe("POST /api/analyze", () => {
     expect(JSON.stringify(body.analysis)).not.toContain("INTERNAL_STRATEGY");
     expect(body.analysis).not.toHaveProperty("probability");
     expect(body.analysis).not.toHaveProperty("first_step");
+  });
+
+  it("retries once when the generated assessment number collides", async () => {
+    mocks.generateAssessmentNumber
+      .mockReturnValueOnce("11399-20260621-0001")
+      .mockReturnValueOnce("11399-20260621-0002");
+    mocks.createCase
+      .mockRejectedValueOnce({
+        code: "P2002",
+        meta: { target: ["assessmentNo"] }
+      })
+      .mockResolvedValueOnce({
+        id: "case_456",
+        assessmentNo: "11399-20260621-0002",
+        scenario: "education",
+        amount: 6800,
+        receiveMethod: "page",
+        leadScore: "A",
+        stage: "deadlock",
+        reviewFlag: "contact_soon",
+        createdAt
+      });
+
+    const response = await POST(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        body: JSON.stringify(validIntake),
+        headers: { "content-type": "application/json" }
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.createCase).toHaveBeenCalledTimes(2);
+    expect(mocks.createCase.mock.calls[0][0].data.assessmentNo).toBe(
+      "11399-20260621-0001"
+    );
+    expect(mocks.createCase.mock.calls[1][0].data.assessmentNo).toBe(
+      "11399-20260621-0002"
+    );
+    expect(body.assessmentNo).toBe("11399-20260621-0002");
+  });
+
+  it("returns 500 without retrying for non-assessment number save errors", async () => {
+    mocks.createCase.mockRejectedValueOnce({
+      code: "P2002",
+      meta: { target: ["contact"] },
+      message: "Unique constraint failed on contact"
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        body: JSON.stringify(validIntake),
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    expect(response.status).toBe(500);
+    expect(mocks.createCase).toHaveBeenCalledOnce();
+    expect(mocks.sendNewCaseNotification).not.toHaveBeenCalled();
+  });
+
+  it("stops retrying assessment number collisions after five attempts", async () => {
+    mocks.createCase.mockRejectedValue({
+      code: "P2002",
+      meta: { target: ["assessmentNo"] },
+      message: "Unique constraint failed on assessmentNo"
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        body: JSON.stringify(validIntake),
+        headers: { "content-type": "application/json" }
+      })
+    );
+
+    expect(response.status).toBe(500);
+    expect(mocks.createCase).toHaveBeenCalledTimes(5);
+    expect(mocks.sendNewCaseNotification).not.toHaveBeenCalled();
   });
 });

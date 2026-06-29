@@ -6,6 +6,9 @@ import {
 
 export type NewCaseNotification = {
   id: string;
+  assessmentNo: string;
+  leadScore: string;
+  receiveMethod: string;
   scenario: string;
   amount: number;
   stage: string;
@@ -24,6 +27,17 @@ function normalizeSiteUrl(value: string) {
   return value.replace(/\/$/, "");
 }
 
+function getReceiveMethodLabel(value: string) {
+  const labels: Record<string, string> = {
+    wechat: "微信",
+    sms: "短信",
+    phone: "电话",
+    page: "页面"
+  };
+
+  return labels[value] ?? value;
+}
+
 export function buildNewCaseNotification(input: NewCaseNotification) {
   const detailUrl = `${normalizeSiteUrl(input.siteUrl)}/cases/${encodeURIComponent(input.id)}`;
   const amount = new Intl.NumberFormat("zh-CN").format(input.amount);
@@ -35,9 +49,11 @@ export function buildNewCaseNotification(input: NewCaseNotification) {
 
   return [
     "## 新退款纠纷案件",
-    `> 案件编号：${input.id}`,
+    `> 评估编号：${input.assessmentNo}`,
+    `> 线索等级：${input.leadScore}`,
+    `> 接收方式：${getReceiveMethodLabel(input.receiveMethod)}`,
     `> 纠纷类型：${getScenarioLabel(input.scenario)}`,
-    `> 支付金额：¥${amount}`,
+    `> 金额：¥${amount}`,
     `> 当前进度：${getStageLabel(input.stage)}`,
     `> 处理优先级：${getReviewFlagLabel(input.reviewFlag)}`,
     `> 提交时间：${submittedAt}`,

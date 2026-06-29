@@ -132,9 +132,13 @@ describe("public analysis boundary", () => {
 
   it.each([
     "商家承诺全额退款但尚未履行；我们保证一定退费",
+    "商家承诺全额退款但尚未履行，我们保证一定退费",
     "商家承诺全额退款但尚未履行。我们保证一定退费",
     "商家承诺全额退款但尚未履行!我们保证一定退费",
-    "商家承诺全额退款但尚未履行\n我们保证一定退费"
+    "商家承诺全额退款但尚未履行\n我们保证一定退费",
+    "商家承诺全额退款但尚未履行；保证一定，退费",
+    "商家承诺全额退款但尚未履行。保证一定。退费",
+    "商家承诺全额退款但尚未履行\n保证一定\n退费"
   ])("limits merchant-attribution exemptions to one clause: %s", (unsafe) => {
     const result = toPublicAnalysis({
       ...internalAnalysis,
