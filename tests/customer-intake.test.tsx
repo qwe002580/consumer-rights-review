@@ -2,7 +2,11 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getReceiveFieldVisibility, IntakeForm } from "../components/intake-form";
+import {
+  buildIntakePayload,
+  getReceiveFieldVisibility,
+  IntakeForm
+} from "../components/intake-form";
 
 const applicableSituations = [
   "商家拒绝退款",
@@ -69,6 +73,48 @@ describe("customer refund intake", () => {
       phone: false,
       contactTime: false
     });
+  });
+
+  it("clears hidden conditional fields before submission", () => {
+    const payload = buildIntakePayload({
+      clientName: "测试客户",
+      contact: "stale-contact",
+      scenario: "ecommerce",
+      amount: "3800",
+      purchaseDate: "2026-06-01",
+      paymentMethod: "full",
+      stage: "none",
+      issues: ["refuse_refund"],
+      evidence: ["payment"],
+      obstacles: [],
+      goal: "full_refund",
+      summary: "商家拒绝退款，希望先判断材料缺口。",
+      agreementStatus: "旧协议信息",
+      installmentStatus: "旧分期信息",
+      platformResult: "旧平台结果",
+      missingEvidenceType: "旧缺失材料",
+      merchantName: "某电商店铺",
+      merchantPromise: "承诺七天无理由退款",
+      receiveMethod: "page",
+      wechatId: "wx-stale",
+      phone: "13800138000",
+      contactTime: "evening",
+      willingToSupplement: "unknown"
+    });
+
+    expect(payload).toEqual(
+      expect.objectContaining({
+        amount: 3800,
+        contact: "",
+        wechatId: "",
+        phone: "",
+        contactTime: "",
+        agreementStatus: "",
+        installmentStatus: "",
+        platformResult: "",
+        missingEvidenceType: ""
+      })
+    );
   });
 
   it("shows the full legal disclaimer", () => {

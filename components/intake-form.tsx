@@ -171,12 +171,31 @@ export function getReceiveFieldVisibility(method: IntakeInput["receiveMethod"]) 
   };
 }
 
-function deriveContact(form: IntakeFormState) {
-  if (form.receiveMethod === "wechat") return form.wechatId.trim();
-  if (form.receiveMethod === "sms" || form.receiveMethod === "phone") {
-    return form.phone.trim();
-  }
-  return "";
+export function buildIntakePayload(form: IntakeFormState): IntakeInput {
+  const showAgreement = ["education", "medical_beauty"].includes(form.scenario);
+  const showInstallment = form.paymentMethod === "installment";
+  const showPlatform = ["platform", "deadlock"].includes(form.stage);
+  const showMissingEvidence = form.obstacles.includes("missing_evidence");
+
+  const contact =
+    form.receiveMethod === "wechat"
+      ? form.wechatId.trim()
+      : ["sms", "phone"].includes(form.receiveMethod)
+        ? form.phone.trim()
+        : "";
+
+  return {
+    ...form,
+    amount: Number(form.amount),
+    contact,
+    wechatId: form.receiveMethod === "wechat" ? form.wechatId : "",
+    phone: ["sms", "phone"].includes(form.receiveMethod) ? form.phone : "",
+    contactTime: form.receiveMethod === "phone" ? form.contactTime : "",
+    agreementStatus: showAgreement ? form.agreementStatus : "",
+    installmentStatus: showInstallment ? form.installmentStatus : "",
+    platformResult: showPlatform ? form.platformResult : "",
+    missingEvidenceType: showMissingEvidence ? form.missingEvidenceType : ""
+  };
 }
 
 export function IntakeForm() {
@@ -200,14 +219,7 @@ export function IntakeForm() {
     setError(null);
 
     try {
-      const payload: IntakeInput = {
-        ...form,
-        amount: Number(form.amount),
-        contact: deriveContact(form),
-        wechatId: form.receiveMethod === "wechat" ? form.wechatId : "",
-        phone: ["sms", "phone"].includes(form.receiveMethod) ? form.phone : "",
-        contactTime: form.receiveMethod === "phone" ? form.contactTime : ""
-      };
+      const payload = buildIntakePayload(form);
 
       const response = await fetch("/api/analyze", {
         method: "POST",
