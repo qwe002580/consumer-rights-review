@@ -19,6 +19,7 @@ process.env.DATABASE_URL = `file:${databasePath}`;
 
 const prisma = new PrismaClient();
 
+// Production schema changes originate here; keep this migration aligned with prisma/schema.prisma.
 try {
   await prisma.$transaction(async (transaction) => {
     await transaction.$executeRawUnsafe(`

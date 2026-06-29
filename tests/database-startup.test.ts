@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -6,15 +6,19 @@ import { PrismaClient } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 
 describe("production database startup", () => {
-  it("initializes from the packaged startup script without the Prisma CLI", async () => {
+  it("initializes from the isolated standalone artifact without the Prisma CLI", async () => {
     const temporaryDirectory = mkdtempSync(path.join(tmpdir(), "case-review-artifact-"));
     const artifactDirectory = path.join(temporaryDirectory, "standalone");
     const databasePath = path.join(artifactDirectory, "data", "cases.db");
 
     try {
-      mkdirSync(artifactDirectory, { recursive: true });
-      cpSync("scripts/start-production.mjs", path.join(artifactDirectory, "start-production.mjs"));
-      symlinkSync(path.resolve("node_modules"), path.join(artifactDirectory, "node_modules"), "dir");
+      const buildResult = spawnSync("npm", ["run", "build"], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: process.env
+      });
+      expect(buildResult.status, buildResult.stderr).toBe(0);
+      cpSync(".next/standalone", artifactDirectory, { recursive: true });
 
       const runPackagedStartup = () =>
         spawnSync(process.execPath, ["start-production.mjs"], {
@@ -45,7 +49,7 @@ describe("production database startup", () => {
     } finally {
       rmSync(temporaryDirectory, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 
   it("creates the database directory and Case table before serving requests", async () => {
     const temporaryDirectory = mkdtempSync(path.join(tmpdir(), "case-review-db-"));
@@ -138,6 +142,18 @@ describe("production database startup", () => {
 
       expect(result.status, result.stderr).toBe(0);
 
+      const repeatedResult = spawnSync(process.execPath, ["scripts/start-production.mjs"], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          DATABASE_INIT_ONLY: "1",
+          DATABASE_URL: databaseUrl
+        }
+      });
+
+      expect(repeatedResult.status, repeatedResult.stderr).toBe(0);
+
       const migratedPrisma = new PrismaClient({
         datasources: {
           db: {
@@ -163,12 +179,59 @@ describe("production database startup", () => {
       ];
 
       expect(columns.map(({ name }) => name)).toEqual(expect.arrayContaining(expectedColumns));
+      await expect(migratedPrisma.case.count()).resolves.toBe(1);
       await expect(
-        migratedPrisma.$queryRawUnsafe<Array<{ id: string; clientName: string }>>(
-          'SELECT "id", "clientName" FROM "Case" WHERE "id" = ?',
-          "legacy-case"
-        )
-      ).resolves.toEqual([{ id: "legacy-case", clientName: "Legacy Client" }]);
+        migratedPrisma.case.findUnique({
+          where: { id: "legacy-case" },
+          select: {
+            id: true,
+            clientName: true,
+            assessmentNo: true,
+            receiveMethod: true,
+            wechatId: true,
+            phone: true,
+            contactTime: true,
+            merchantName: true,
+            merchantPromise: true,
+            willingToSupplement: true,
+            leadScore: true,
+            addedWechat: true,
+            addedWechatAt: true
+          }
+        })
+      ).resolves.toEqual({
+        id: "legacy-case",
+        clientName: "Legacy Client",
+        assessmentNo: null,
+        receiveMethod: "legacy",
+        wechatId: "",
+        phone: "",
+        contactTime: "",
+        merchantName: "",
+        merchantPromise: "",
+        willingToSupplement: "unknown",
+        leadScore: "C",
+        addedWechat: false,
+        addedWechatAt: null
+      });
+
+      await migratedPrisma.case.update({
+        where: { id: "legacy-case" },
+        data: { assessmentNo: "ASSESSMENT-001" }
+      });
+      await expect(
+        migratedPrisma.$executeRawUnsafe(`
+          INSERT INTO "Case" (
+            "id", "clientName", "contact", "scenario", "amount", "purchaseDate",
+            "paymentMethod", "stage", "goal", "intake", "assessmentNo", "createdAt", "updatedAt"
+          ) VALUES (
+            'duplicate-case', 'Duplicate Client', 'duplicate@example.com', 'refund', 1200,
+            '2025-01-02T00:00:00.000Z', 'card', 'intake', 'recover', '{}', 'ASSESSMENT-001',
+            '2025-01-02T00:00:00.000Z', '2025-01-02T00:00:00.000Z'
+          )
+        `)
+      ).rejects.toThrow();
+      await expect(migratedPrisma.case.count()).resolves.toBe(1);
       await migratedPrisma.$disconnect();
     } finally {
       await prisma.$disconnect();
