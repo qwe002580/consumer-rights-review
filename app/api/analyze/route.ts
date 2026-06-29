@@ -21,7 +21,20 @@ function isAssessmentNumberConflict(error: unknown) {
 }
 
 export async function POST(request: Request) {
-  const json = await request.json();
+  let json: unknown;
+
+  try {
+    json = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        error: "INVALID_JSON",
+        details: "请求内容格式不正确，请重新提交。"
+      },
+      { status: 400 }
+    );
+  }
+
   const parsed = intakeSchema.safeParse(json);
 
   if (!parsed.success) {
@@ -109,10 +122,11 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (error) {
+    console.error("Case save failed", error);
     return NextResponse.json(
       {
         error: "CASE_SAVE_FAILED",
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: "案件暂时保存失败，请稍后重试。"
       },
       { status: 500 }
     );

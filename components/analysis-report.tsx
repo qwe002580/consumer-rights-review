@@ -11,6 +11,9 @@ type AnalysisReportProps = {
   result: PublicAnalysis | null;
   scenario: string;
   goal: string;
+  assessmentNo?: string;
+  caseId?: string;
+  leadScore?: string;
   error?: string | null;
   loading?: boolean;
 };
@@ -65,6 +68,9 @@ export function AnalysisReport({
   result,
   scenario,
   goal,
+  assessmentNo: _assessmentNo,
+  caseId: _caseId,
+  leadScore: _leadScore,
   error = null,
   loading = false
 }: AnalysisReportProps) {

@@ -79,6 +79,7 @@ const createdAt = new Date("2026-06-21T08:00:00.000Z");
 describe("POST /api/analyze", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubEnv(
       "PUBLIC_SITE_URL",
       "https://consumer-rights-review.zeabur.app"
@@ -114,6 +115,25 @@ describe("POST /api/analyze", () => {
     );
 
     expect(response.status).toBe(400);
+    expect(mocks.sendNewCaseNotification).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed JSON without analyzing or notifying", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        body: "{not-json",
+        headers: { "content-type": "application/json" }
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: "INVALID_JSON",
+      details: "请求内容格式不正确，请重新提交。"
+    });
+    expect(mocks.analyzeIntake).not.toHaveBeenCalled();
     expect(mocks.sendNewCaseNotification).not.toHaveBeenCalled();
   });
 
@@ -238,8 +258,14 @@ describe("POST /api/analyze", () => {
         headers: { "content-type": "application/json" }
       })
     );
+    const body = await response.json();
 
     expect(response.status).toBe(500);
+    expect(body).toEqual({
+      error: "CASE_SAVE_FAILED",
+      details: "案件暂时保存失败，请稍后重试。"
+    });
+    expect(JSON.stringify(body)).not.toContain("Unique constraint");
     expect(mocks.createCase).toHaveBeenCalledOnce();
     expect(mocks.sendNewCaseNotification).not.toHaveBeenCalled();
   });
