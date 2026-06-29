@@ -92,7 +92,7 @@ export const caseStatusLabels = {
 
 export const intakeSchema = z.object({
   clientName: z.string().min(1),
-  contact: z.string().min(1),
+  contact: z.string().default(""),
   scenario: z.string().min(1),
   amount: z.number().int().positive(),
   purchaseDate: z.string().min(1),
@@ -106,7 +106,27 @@ export const intakeSchema = z.object({
   agreementStatus: z.string().optional(),
   installmentStatus: z.string().optional(),
   platformResult: z.string().optional(),
-  missingEvidenceType: z.string().optional()
+  missingEvidenceType: z.string().optional(),
+  merchantName: z.string().trim().min(1),
+  merchantPromise: z.string().trim().min(1),
+  receiveMethod: z.enum(["wechat", "sms", "phone", "page"]),
+  wechatId: z.string().default(""),
+  phone: z.string().default(""),
+  contactTime: z.string().default(""),
+  willingToSupplement: z.enum(["yes", "not_now", "unknown"])
+}).superRefine((value, ctx) => {
+  if (value.receiveMethod === "wechat" && !value.wechatId.trim()) {
+    ctx.addIssue({ code: "custom", path: ["wechatId"], message: "请输入微信号" });
+  }
+  if (["sms", "phone"].includes(value.receiveMethod) && !/^1\d{10}$/.test(value.phone)) {
+    ctx.addIssue({ code: "custom", path: ["phone"], message: "请输入有效手机号" });
+  }
+  if (
+    value.receiveMethod === "phone" &&
+    !["now", "30m", "afternoon", "evening", "tomorrow"].includes(value.contactTime)
+  ) {
+    ctx.addIssue({ code: "custom", path: ["contactTime"], message: "请选择方便沟通时间" });
+  }
 });
 
 export const probabilityRangeSchema = z.object({
