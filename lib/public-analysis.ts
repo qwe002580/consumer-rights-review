@@ -26,19 +26,20 @@ const attributedUnfulfilledPromise =
 function normalizeForSafetyCheck(value: string) {
   return value
     .normalize("NFKC")
+    .replace(/[\r\n]+/g, ";")
     .replace(/[\s\u200B-\u200D\u2060\uFEFF]+/g, "")
     .toLowerCase();
 }
 
 function containsProhibitedPublicContent(value: string) {
   const normalized = normalizeForSafetyCheck(value);
-  if (prohibitedPublicPatterns.some((pattern) => pattern.test(normalized))) {
-    return true;
-  }
+  const clauses = normalized.split(/[;；。.!！?？]+/).filter(Boolean);
 
-  return (
-    !attributedUnfulfilledPromise.test(normalized) &&
-    prohibitedPromisePatterns.some((pattern) => pattern.test(normalized))
+  return clauses.some(
+    (clause) =>
+      prohibitedPublicPatterns.some((pattern) => pattern.test(clause)) ||
+      (!attributedUnfulfilledPromise.test(clause) &&
+        prohibitedPromisePatterns.some((pattern) => pattern.test(clause)))
   );
 }
 

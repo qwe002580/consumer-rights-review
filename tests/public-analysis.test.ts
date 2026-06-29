@@ -129,4 +129,23 @@ describe("public analysis boundary", () => {
     ]);
     expect(result.manualReviewRecommended).toBe(true);
   });
+
+  it.each([
+    "商家承诺全额退款但尚未履行；我们保证一定退费",
+    "商家承诺全额退款但尚未履行。我们保证一定退费",
+    "商家承诺全额退款但尚未履行!我们保证一定退费",
+    "商家承诺全额退款但尚未履行\n我们保证一定退费"
+  ])("limits merchant-attribution exemptions to one clause: %s", (unsafe) => {
+    const result = toPublicAnalysis({
+      ...internalAnalysis,
+      adverse_factors: [unsafe],
+      decisive_issues: [],
+      review_flag: "self_service"
+    });
+
+    expect(result.riskPoints).toEqual([
+      "该风险点包含非诊断内容，需要人工复核。"
+    ]);
+    expect(result.manualReviewRecommended).toBe(true);
+  });
 });
