@@ -1,5 +1,41 @@
 import { z } from "zod";
 
+export type CalendarDate = { year: number; month: number; day: number };
+
+export function getShanghaiCalendarDate(date: Date): CalendarDate {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+
+  return { year: value("year"), month: value("month"), day: value("day") };
+}
+
+export function parseValidPurchaseDate(value: string, now = new Date()): CalendarDate | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const purchase = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+  const utcDate = new Date(0);
+  utcDate.setUTCHours(0, 0, 0, 0);
+  utcDate.setUTCFullYear(purchase.year, purchase.month - 1, purchase.day);
+  if (
+    utcDate.getUTCFullYear() !== purchase.year ||
+    utcDate.getUTCMonth() + 1 !== purchase.month ||
+    utcDate.getUTCDate() !== purchase.day
+  ) {
+    return null;
+  }
+
+  const current = getShanghaiCalendarDate(now);
+  const dateKey = (date: CalendarDate) => date.year * 10000 + date.month * 100 + date.day;
+  return dateKey(purchase) <= dateKey(current) ? purchase : null;
+}
+
 export const scenarioLabels = {
   education: "教培退费",
   medical_beauty: "医美纠纷",
@@ -95,7 +131,11 @@ export const intakeSchema = z.object({
   contact: z.string().default(""),
   scenario: z.string().min(1),
   amount: z.number().int().positive(),
-  purchaseDate: z.string().min(1),
+  purchaseDate: z.string().superRefine((value, ctx) => {
+    if (!parseValidPurchaseDate(value)) {
+      ctx.addIssue({ code: "custom", message: "请输入有效且不晚于今天的购买日期" });
+    }
+  }),
   paymentMethod: z.string().min(1),
   stage: z.string().min(1),
   issues: z.array(z.string()).min(1),
@@ -111,7 +151,7 @@ export const intakeSchema = z.object({
   merchantPromise: z.string().trim().min(1),
   receiveMethod: z.enum(["wechat", "sms", "phone", "page"]),
   wechatId: z.string().default(""),
-  phone: z.string().default(""),
+  phone: z.string().trim().default(""),
   contactTime: z.union([
     z.enum(["now", "30m", "afternoon", "evening", "tomorrow"]),
     z.literal("")

@@ -54,6 +54,19 @@ describe("schema labels", () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("requires a real non-future YYYY-MM-DD purchase date", () => {
+    for (const purchaseDate of [
+      "2026-02-30",
+      "2025-02-29",
+      "2026-6-01",
+      "2026-06-01-extra",
+      "2999-01-01"
+    ]) {
+      expect(intakeSchema.safeParse({ ...validIntake, purchaseDate }).success).toBe(false);
+    }
+    expect(intakeSchema.safeParse({ ...validIntake, purchaseDate: "2024-02-29" }).success).toBe(true);
+  });
+
   it("requires a nonblank WeChat ID for WeChat delivery", () => {
     expect(intakeSchema.safeParse({ ...validIntake, wechatId: "  " }).success).toBe(false);
   });
@@ -64,6 +77,26 @@ describe("schema labels", () => {
     ).toBe(false);
     expect(
       intakeSchema.safeParse({ ...validIntake, receiveMethod: "sms", phone: "13800138000" }).success
+    ).toBe(true);
+    const trimmed = intakeSchema.safeParse({
+      ...validIntake,
+      receiveMethod: "sms",
+      phone: " 13800138000 "
+    });
+    expect(trimmed.success).toBe(true);
+    if (trimmed.success) expect(trimmed.data.phone).toBe("13800138000");
+  });
+
+  it("ignores stale contact fields that do not belong to the receive method", () => {
+    expect(
+      intakeSchema.safeParse({
+        ...validIntake,
+        contact: "legacy-contact",
+        receiveMethod: "page",
+        wechatId: "stale-wechat",
+        phone: "not-a-mobile",
+        contactTime: "tomorrow"
+      }).success
     ).toBe(true);
   });
 

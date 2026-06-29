@@ -1,4 +1,9 @@
-import type { IntakeInput } from "./schema";
+import {
+  getShanghaiCalendarDate,
+  parseValidPurchaseDate,
+  type CalendarDate,
+  type IntakeInput
+} from "./schema";
 
 export type LeadScore = {
   points: number;
@@ -6,28 +11,20 @@ export type LeadScore = {
   reasons: string[];
 };
 
-function shanghaiDate(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  }).formatToParts(date);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((part) => part.type === type)?.value);
-
-  return { year: value("year"), month: value("month"), day: value("day") };
+function dateKey(date: CalendarDate) {
+  return date.year * 10000 + date.month * 100 + date.day;
 }
 
 function purchaseAgeBand(purchaseDate: string, now: Date) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(purchaseDate);
-  if (!match) return "older";
+  const purchase = parseValidPurchaseDate(purchaseDate, now);
+  if (!purchase) return "older";
 
-  const current = shanghaiDate(now);
-  const purchase = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
-  const currentKey = current.year * 10000 + current.month * 100 + current.day;
-  const anniversaryKey = (years: number) =>
-    (purchase.year + years) * 10000 + purchase.month * 100 + purchase.day;
+  const currentKey = dateKey(getShanghaiCalendarDate(now));
+  const anniversaryKey = (years: number) => {
+    const year = purchase.year + years;
+    const lastDayOfMonth = new Date(Date.UTC(year, purchase.month, 0)).getUTCDate();
+    return dateKey({ ...purchase, year, day: Math.min(purchase.day, lastDayOfMonth) });
+  };
 
   if (currentKey <= anniversaryKey(2)) return "two_years";
   if (currentKey <= anniversaryKey(3)) return "three_years";
@@ -84,7 +81,7 @@ export function calculateLeadScore(intake: IntakeInput, now = new Date()): LeadS
     add(1, "商家信息较完整");
   }
 
-  if (intake.receiveMethod === "page" && !intake.contact.trim()) add(-1, "仅查看页面且未留联系方式");
+  if (intake.receiveMethod === "page") add(-1, "仅选择页面接收");
   if (intake.summary.trim().length < 20 && intake.evidence.length < 2) {
     add(-1, "案情描述和材料较少");
   }

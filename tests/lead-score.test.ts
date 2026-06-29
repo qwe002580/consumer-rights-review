@@ -29,6 +29,14 @@ function intake(overrides: Partial<IntakeInput> = {}): IntakeInput {
   };
 }
 
+function purchaseDatePoints(purchaseDate: string, current: Date) {
+  const result = calculateLeadScore(
+    intake({ purchaseDate, receiveMethod: "wechat", wechatId: "wx-wang" }),
+    current
+  );
+  return result.points - 1;
+}
+
 describe("calculateLeadScore", () => {
   it("assigns grade A at exactly 8 points", () => {
     const result = calculateLeadScore(
@@ -61,11 +69,41 @@ describe("calculateLeadScore", () => {
     expect(result).toMatchObject({ points: -1, grade: "C" });
   });
 
-  it("scores purchase age by calendar-year anniversaries", () => {
-    expect(calculateLeadScore(intake({ purchaseDate: "2024-06-29" }), now).points).toBe(1);
-    expect(calculateLeadScore(intake({ purchaseDate: "2024-06-28" }), now).points).toBe(0);
-    expect(calculateLeadScore(intake({ purchaseDate: "2023-06-29" }), now).points).toBe(0);
-    expect(calculateLeadScore(intake({ purchaseDate: "2023-06-28" }), now).points).toBe(-1);
+  it("uses the Asia/Shanghai date at midnight", () => {
+    expect(purchaseDatePoints("2026-06-30", new Date("2026-06-29T15:59:59Z"))).toBe(0);
+    expect(purchaseDatePoints("2026-06-30", new Date("2026-06-29T16:00:00Z"))).toBe(2);
+  });
+
+  it("gives no age points to future or malformed purchase dates", () => {
+    expect(purchaseDatePoints("2026-06-30", now)).toBe(0);
+    expect(purchaseDatePoints("2026-02-30", now)).toBe(0);
+    expect(purchaseDatePoints("2026-06-01-extra", now)).toBe(0);
+  });
+
+  it("scores exact two-year and three-year calendar boundaries", () => {
+    expect(purchaseDatePoints("2024-06-29", now)).toBe(2);
+    expect(purchaseDatePoints("2024-06-28", now)).toBe(1);
+    expect(purchaseDatePoints("2023-06-29", now)).toBe(1);
+    expect(purchaseDatePoints("2023-06-28", now)).toBe(0);
+  });
+
+  it("clamps leap-day anniversaries to the last day of February", () => {
+    const twoYearBoundary = new Date("2026-02-28T04:00:00Z");
+    const afterTwoYears = new Date("2026-03-01T04:00:00Z");
+    const threeYearBoundary = new Date("2027-02-28T04:00:00Z");
+    const afterThreeYears = new Date("2027-03-01T04:00:00Z");
+
+    expect(purchaseDatePoints("2024-02-29", twoYearBoundary)).toBe(2);
+    expect(purchaseDatePoints("2024-02-29", afterTwoYears)).toBe(1);
+    expect(purchaseDatePoints("2024-02-29", threeYearBoundary)).toBe(1);
+    expect(purchaseDatePoints("2024-02-29", afterThreeYears)).toBe(0);
+  });
+
+  it("penalizes page-only delivery even when legacy contact is populated", () => {
+    const result = calculateLeadScore(intake({ contact: "fake-contact" }), now);
+
+    expect(result.points).toBe(-1);
+    expect(result.reasons).toContain("仅选择页面接收 -1");
   });
 
   it("deducts one point for a thin summary with fewer than two evidence items", () => {
