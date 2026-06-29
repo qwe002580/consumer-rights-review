@@ -39,12 +39,14 @@ export async function POST(request: Request) {
 
   try {
     let record;
+    let assessmentNo = "";
 
     for (let attempt = 1; attempt <= MAX_ASSESSMENT_NUMBER_ATTEMPTS; attempt += 1) {
       try {
+        assessmentNo = generateAssessmentNumber();
         record = await prisma.case.create({
           data: {
-            assessmentNo: generateAssessmentNumber(),
+            assessmentNo,
             clientName: parsed.data.clientName,
             contact: parsed.data.contact,
             scenario: parsed.data.scenario,
@@ -86,7 +88,7 @@ export async function POST(request: Request) {
 
     await sendNewCaseNotification({
       id: record.id,
-      assessmentNo: record.assessmentNo,
+      assessmentNo,
       leadScore: record.leadScore,
       receiveMethod: record.receiveMethod,
       scenario: record.scenario,
@@ -100,7 +102,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         id: record.id,
-        assessmentNo: record.assessmentNo,
+        assessmentNo,
         leadScore: record.leadScore,
         analysis: toPublicAnalysis(analysis)
       },
