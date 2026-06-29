@@ -35,13 +35,16 @@ describe("customer refund intake", () => {
     const merchantIndex = html.indexOf("商家或机构名称");
     const receiveIndex = html.indexOf("接收你的免费评估结果");
     const nameIndex = html.indexOf("您的称呼");
+    const receiveChoiceIndex = html.indexOf("选择接收方式");
 
     expect(scenarioIndex).toBeGreaterThan(-1);
     expect(merchantIndex).toBeGreaterThan(scenarioIndex);
     expect(receiveIndex).toBeGreaterThan(merchantIndex);
     expect(nameIndex).toBeGreaterThan(receiveIndex);
+    expect(receiveChoiceIndex).toBeGreaterThan(nameIndex);
     expect(scenarioIndex).toBeLessThan(nameIndex);
     expect(html).not.toContain("对方联系方式");
+    expect(html).not.toContain("Case Review");
     expect(html).toContain("生成我的免费评估结果");
   });
 

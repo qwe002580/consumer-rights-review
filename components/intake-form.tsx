@@ -559,6 +559,19 @@ export function IntakeForm() {
                 <p>你可以选择直接在本页查看；如果愿意继续复核，再留下联系方式。</p>
               </div>
 
+              <div className="lead-capture-grid">
+                <label>
+                  <span>您的称呼</span>
+                  <input
+                    required
+                    value={form.clientName}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, clientName: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+
               <fieldset className="receive-method-section">
                 <legend>选择接收方式</legend>
                 <div className="receive-method-grid">
@@ -586,17 +599,6 @@ export function IntakeForm() {
               </fieldset>
 
               <div className="lead-capture-grid">
-                <label>
-                  <span>您的称呼</span>
-                  <input
-                    required
-                    value={form.clientName}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, clientName: event.target.value }))
-                    }
-                  />
-                </label>
-
                 {receiveFields.wechat ? (
                   <label>
                     <span>微信号</span>

@@ -80,7 +80,6 @@ export function AnalysisReport({
     return (
       <section className="report-panel">
         <div className="panel-header">
-          <p className="eyebrow">Case Review</p>
           <h2>正在整理结果</h2>
         </div>
         <p className="muted-copy">系统正在结合你提交的事实和材料生成初步判断。</p>
@@ -92,7 +91,6 @@ export function AnalysisReport({
     return (
       <section className="report-panel">
         <div className="panel-header">
-          <p className="eyebrow">Case Review</p>
           <h2>暂时无法生成结果</h2>
         </div>
         <p className="muted-copy">{error}</p>
@@ -104,7 +102,6 @@ export function AnalysisReport({
     return (
       <section className="report-panel">
         <div className="panel-header">
-          <p className="eyebrow">Case Review</p>
           <h2>分析结果</h2>
         </div>
         <p className="muted-copy">
@@ -117,7 +114,6 @@ export function AnalysisReport({
   return (
     <section className="report-panel">
       <div className="panel-header">
-        <p className="eyebrow">Case Review</p>
         <h2>分析结果</h2>
       </div>
 
