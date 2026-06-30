@@ -119,12 +119,23 @@ export const reviewFlagLabels = {
 } as const;
 
 export const caseStatusLabels = {
+  uncontacted: "未联系",
+  wechat_added: "已加企微",
+  no_answer: "未接通",
+  communicated: "已沟通",
+  strong_interest: "强意向",
+  not_now: "暂不处理",
+  converted: "已转化",
+  invalid: "无效线索"
+} as const;
+
+const legacyCaseStatusLabels: Record<string, string> = {
   new: "新提交",
   reviewed: "已复核",
   contacted: "已联系",
   on_hold: "暂缓处理",
   closed: "已关闭"
-} as const;
+};
 
 export const intakeSchema = z.object({
   clientName: z.string().min(1),
@@ -311,7 +322,21 @@ export function normalizeStoredAnalysis(value: unknown): StoredAnalysisDisplay |
 }
 
 export const caseUpdateSchema = z.object({
-  status: z.enum(["new", "reviewed", "contacted", "on_hold", "closed"]),
+  status: z.enum([
+    "uncontacted",
+    "wechat_added",
+    "no_answer",
+    "communicated",
+    "strong_interest",
+    "not_now",
+    "converted",
+    "invalid",
+    "new",
+    "reviewed",
+    "contacted",
+    "on_hold",
+    "closed"
+  ]),
   operatorNotes: z.string().default("")
 });
 
@@ -343,7 +368,38 @@ export function getReviewFlagLabel(value: string | null | undefined) {
 }
 
 export function getCaseStatusLabel(value: string) {
-  return caseStatusLabels[value as keyof typeof caseStatusLabels] ?? value;
+  return caseStatusLabels[value as keyof typeof caseStatusLabels] ?? legacyCaseStatusLabels[value] ?? value;
+}
+
+export function getReceiveMethodLabel(value: string) {
+  const labels: Record<string, string> = {
+    wechat: "微信",
+    sms: "短信",
+    phone: "电话",
+    page: "页面查看",
+    legacy: "历史记录"
+  };
+  return labels[value] ?? value;
+}
+
+export function getContactTimeLabel(value: string) {
+  const labels: Record<string, string> = {
+    now: "现在方便",
+    "30m": "30分钟后",
+    afternoon: "今天下午",
+    evening: "今天晚上",
+    tomorrow: "明天联系"
+  };
+  return labels[value] ?? (value || "未填写");
+}
+
+export function getSupplementWillingnessLabel(value: string) {
+  const labels: Record<string, string> = {
+    yes: "愿意补充",
+    not_now: "暂时不方便",
+    unknown: "先看结果再说"
+  };
+  return labels[value] ?? value;
 }
 
 export function normalizeIntakeForDisplay(intake: IntakeInput) {

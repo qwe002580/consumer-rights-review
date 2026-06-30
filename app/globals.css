@@ -1232,7 +1232,8 @@ textarea {
 }
 
 .risk-badge,
-.status-badge {
+.status-badge,
+.lead-badge {
   display: inline-flex;
   align-items: center;
   padding: 5px 9px;
@@ -1268,10 +1269,39 @@ textarea {
   color: var(--forest);
 }
 
-.status-closed,
-.status-on_hold {
+.lead-badge {
   background: #ebe7e1;
   color: #655d54;
+}
+
+.lead-A {
+  background: #f5ded8;
+  color: #8b3323;
+}
+
+.lead-B {
+  background: #f5e5ce;
+  color: #87501d;
+}
+
+.lead-C {
+  background: #dfe9e4;
+  color: #294f43;
+}
+
+.status-closed,
+.status-on_hold,
+.status-invalid,
+.status-not_now {
+  background: #ebe7e1;
+  color: #655d54;
+}
+
+.status-converted,
+.status-wechat_added,
+.status-strong_interest {
+  background: rgba(216, 81, 47, 0.12);
+  color: var(--signal-dark);
 }
 
 .amount-cell {
@@ -1301,6 +1331,29 @@ textarea {
 
 .workbench-empty strong {
   color: var(--ink);
+}
+
+.workbench-card-list {
+  display: none;
+}
+
+.workbench-case-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.workbench-case-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.case-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .sr-only {
@@ -1534,5 +1587,13 @@ textarea {
 
   .workbench-filters p {
     margin: 4px 0 0;
+  }
+
+  .workbench-table-wrap .admin-table {
+    display: none;
+  }
+
+  .workbench-card-list {
+    display: grid;
   }
 }

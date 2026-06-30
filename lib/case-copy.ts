@@ -1,26 +1,41 @@
 import {
   getCaseStatusLabel,
+  getContactTimeLabel,
   getGoalLabel,
   getPaymentMethodLabel,
+  getReceiveMethodLabel,
   getReviewFlagLabel,
   getScenarioLabel,
   getStageLabel,
+  getSupplementWillingnessLabel,
   intakeSchema,
   normalizeIntakeForDisplay,
   normalizeStoredAnalysis
 } from "./schema";
+import { calculateLeadScore } from "./lead-score";
 
 export type InternalCaseSummaryInput = {
   id: string;
+  assessmentNo?: string | null;
+  addedWechat?: boolean;
+  addedWechatAt?: string | null;
   createdAt: string;
   status: string;
   clientName: string;
   contact: string;
+  contactTime?: string;
+  leadScore?: string;
+  merchantName?: string;
+  merchantPromise?: string;
+  phone?: string;
+  receiveMethod?: string;
   scenario: string;
   amount: number;
   operatorNotes: string;
   intake: unknown;
   analysis: unknown;
+  wechatId?: string;
+  willingToSupplement?: string;
 };
 
 function bullets(items: string[], fallback = "- 未填写") {
@@ -58,23 +73,38 @@ export function buildInternalCaseSummary(input: InternalCaseSummaryInput) {
     : null;
   const analysis = normalizeStoredAnalysis(input.analysis);
   const probability = analysis?.probability;
+  const scoreReasons = parsedIntake.success
+    ? calculateLeadScore(parsedIntake.data).reasons
+    : [];
 
   return [
     "【内部案件摘要】",
     section("一、案件概览", [
       `案件编号：${input.id}`,
+      `评估编号：${input.assessmentNo || "未生成"}`,
+      `线索等级：${input.leadScore || "未标记"}`,
+      `评分依据：${scoreReasons.length ? scoreReasons.join("；") : "旧案件暂无评分依据"}`,
+      `企微添加：${input.addedWechat ? "已点击添加" : "未点击"}`,
+      `企微点击时间：${input.addedWechatAt ? formatCreatedAt(input.addedWechatAt) : "暂无"}`,
       `提交时间：${formatCreatedAt(input.createdAt)}`,
       `状态：${getCaseStatusLabel(input.status)}`,
       `优先级：${getReviewFlagLabel(analysis?.review_flag)}`
     ]),
     section("二、客户与交易", [
       `客户称呼：${input.clientName}`,
-      `联系方式：${input.contact}`,
+      `接收方式：${getReceiveMethodLabel(input.receiveMethod || intake?.receiveMethod || "legacy")}`,
+      `联系方式：${input.contact || "未填写"}`,
+      `微信号：${input.wechatId || "未填写"}`,
+      `手机号：${input.phone || "未填写"}`,
+      `方便沟通时间：${getContactTimeLabel(input.contactTime || "")}`,
+      `补充材料意愿：${getSupplementWillingnessLabel(input.willingToSupplement || intake?.willingToSupplement || "unknown")}`,
       `纠纷类型：${getScenarioLabel(input.scenario)}`,
       `支付金额：¥${new Intl.NumberFormat("zh-CN").format(input.amount)}`,
       `付款时间：${intake?.purchaseDate ?? "未填写"}`,
       `付款方式：${intake ? getPaymentMethodLabel(intake.paymentMethod) : "未填写"}`,
-      `目标诉求：${intake ? getGoalLabel(intake.goal) : "未填写"}`
+      `目标诉求：${intake ? getGoalLabel(intake.goal) : "未填写"}`,
+      `商家/机构：${input.merchantName || intake?.merchantName || "未填写"}`,
+      `商家承诺：${input.merchantPromise || intake?.merchantPromise || "未填写"}`
     ]),
     section("三、客户提交情况", [
       `当前进度：${intake ? getStageLabel(intake.stage) : "未填写"}`,

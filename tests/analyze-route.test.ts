@@ -161,7 +161,8 @@ describe("POST /api/analyze", () => {
         leadScore: "A",
         intake: validIntake,
         analysis,
-        reviewFlag: "contact_soon"
+        reviewFlag: "contact_soon",
+        status: "uncontacted"
       })
     );
     expect(mocks.sendNewCaseNotification).toHaveBeenCalledWith({

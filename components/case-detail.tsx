@@ -5,12 +5,17 @@ import Link from "next/link";
 import { useState } from "react";
 import { buildInternalCaseSummary } from "@/lib/case-copy";
 import { copyTextWithFallback } from "@/lib/clipboard";
+import { calculateLeadScore } from "@/lib/lead-score";
 import {
   getGoalLabel,
   getPaymentMethodLabel,
+  getCaseStatusLabel,
+  getContactTimeLabel,
+  getReceiveMethodLabel,
   getReviewFlagLabel,
   getScenarioLabel,
   getStageLabel,
+  getSupplementWillingnessLabel,
   intakeSchema,
   normalizeIntakeForDisplay,
   normalizeStoredAnalysis
@@ -18,23 +23,37 @@ import {
 
 type CaseDetailProps = {
   id: string;
+  assessmentNo?: string | null;
+  addedWechat?: boolean;
+  addedWechatAt?: string | null;
   clientName: string;
   contact: string;
+  contactTime?: string;
   scenario: string;
   amount: number;
   createdAt: string;
+  leadScore?: string;
+  merchantName?: string;
+  merchantPromise?: string;
   status: string;
   operatorNotes: string;
+  phone?: string;
+  receiveMethod?: string;
   intake: unknown;
   analysis: unknown;
+  wechatId?: string;
+  willingToSupplement?: string;
 };
 
 const statusOptions = [
-  { value: "new", label: "新提交" },
-  { value: "reviewed", label: "已复核" },
-  { value: "contacted", label: "已联系" },
-  { value: "on_hold", label: "暂缓处理" },
-  { value: "closed", label: "已关闭" }
+  { value: "uncontacted", label: "未联系" },
+  { value: "wechat_added", label: "已加企微" },
+  { value: "no_answer", label: "未接通" },
+  { value: "communicated", label: "已沟通" },
+  { value: "strong_interest", label: "强意向" },
+  { value: "not_now", label: "暂不处理" },
+  { value: "converted", label: "已转化" },
+  { value: "invalid", label: "无效线索" }
 ];
 
 function legacyCopy(text: string) {
@@ -75,6 +94,13 @@ export function CaseDetail(props: CaseDetailProps) {
     ? normalizeIntakeForDisplay(parsedIntake.data)
     : null;
   const analysis = normalizeStoredAnalysis(props.analysis);
+  const leadScore = parsedIntake.success ? calculateLeadScore(parsedIntake.data) : null;
+  const receiveMethod = props.receiveMethod || intake?.receiveMethod || "legacy";
+  const merchantName = props.merchantName || intake?.merchantName || "未填写";
+  const merchantPromise = props.merchantPromise || intake?.merchantPromise || "未填写";
+  const contactTime = props.contactTime || intake?.contactTime || "";
+  const willingToSupplement =
+    props.willingToSupplement || intake?.willingToSupplement || "unknown";
 
   async function handleSave() {
     setSaving(true);
@@ -131,14 +157,32 @@ export function CaseDetail(props: CaseDetailProps) {
         <article className="report-card">
           <h3>基本信息</h3>
           <div className="detail-list">
+            <div><span>评估编号</span><strong>{props.assessmentNo || props.id}</strong></div>
+            <div><span>线索等级</span><strong>{props.leadScore || "C"} 级</strong></div>
+            <div><span>企微添加</span><strong>{props.addedWechat ? "已点击企微" : "未点击企微"}</strong></div>
+            <div><span>企微点击时间</span><strong>{props.addedWechatAt ? new Date(props.addedWechatAt).toLocaleString("zh-CN") : "暂无"}</strong></div>
             <div><span>客户称呼</span><strong>{props.clientName}</strong></div>
             <div><span>客户联系方式</span><strong>{props.contact}</strong></div>
+            <div><span>接收方式</span><strong>{getReceiveMethodLabel(receiveMethod)}</strong></div>
+            <div><span>微信号</span><strong>{props.wechatId || "未填写"}</strong></div>
+            <div><span>手机号</span><strong>{props.phone || "未填写"}</strong></div>
+            <div><span>方便沟通时间</span><strong>{getContactTimeLabel(contactTime)}</strong></div>
             <div><span>纠纷类型</span><strong>{getScenarioLabel(props.scenario)}</strong></div>
             <div><span>支付金额</span><strong>¥{props.amount.toLocaleString("zh-CN")}</strong></div>
+            <div><span>商家或机构</span><strong>{merchantName}</strong></div>
+            <div><span>商家承诺</span><strong>{merchantPromise}</strong></div>
+            <div><span>补充材料意愿</span><strong>{getSupplementWillingnessLabel(willingToSupplement)}</strong></div>
+          </div>
+          <div className="detail-section-stack lead-reasons">
+            <h4>线索评分依据</h4>
+            {renderList(leadScore?.reasons ?? [], "旧案件暂无评分依据")}
           </div>
         </article>
         <article className="report-card">
           <h3>处理状态</h3>
+          <div className="detail-list status-overview">
+            <div><span>当前跟进</span><strong>{getCaseStatusLabel(status)}</strong></div>
+          </div>
           <label className="stack-field">
             <span>当前状态</span>
             <select value={status} onChange={(event) => setStatus(event.target.value)}>

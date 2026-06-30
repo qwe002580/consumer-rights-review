@@ -4,11 +4,15 @@ import { filterAndSortCases } from "../components/case-table";
 
 const baseCase = {
   id: "case-1",
+  assessmentNo: "11399-20260618-0001",
   clientName: "张女士",
   contact: "13800000000",
+  receiveMethod: "phone",
+  leadScore: "C",
+  addedWechat: false,
   scenario: "ecommerce",
   amount: 3999,
-  status: "new",
+  status: "uncontacted",
   reviewFlag: "self_service",
   createdAt: new Date("2026-06-18T08:00:00.000Z"),
   analysis: { summary: "普通售后纠纷" }
@@ -21,33 +25,50 @@ describe("case workbench", () => {
     expect(source).toContain("客户联系方式：");
   });
 
-  it("places urgent cases before self-service cases", () => {
-    const urgent = {
+  it("prioritizes lead grade before recency", () => {
+    const aOld = {
       ...baseCase,
-      id: "urgent",
-      reviewFlag: "complex_high_risk",
+      id: "a-old",
+      leadScore: "A",
       createdAt: new Date("2026-06-17T08:00:00.000Z")
     };
+    const aNew = {
+      ...baseCase,
+      id: "a-new",
+      leadScore: "A",
+      createdAt: new Date("2026-06-19T08:00:00.000Z")
+    };
+    const bCase = { ...baseCase, id: "b", leadScore: "B" };
+    const cCase = { ...baseCase, id: "c", leadScore: "C" };
 
-    const result = filterAndSortCases([baseCase, urgent], "all", "all");
+    const result = filterAndSortCases([cCase, aOld, aNew, bCase], "all", "all");
 
-    expect(result.map((item) => item.id)).toEqual(["urgent", "case-1"]);
+    expect(result.map((item) => item.id)).toEqual(["a-new", "a-old", "b", "c"]);
   });
 
-  it("filters cases by status and review priority", () => {
-    const reviewed = {
+  it("filters cases by status and lead grade", () => {
+    const strongInterest = {
       ...baseCase,
-      id: "reviewed",
-      status: "reviewed",
-      reviewFlag: "manual_review"
+      id: "strong-interest",
+      status: "strong_interest",
+      leadScore: "A"
     };
 
     const result = filterAndSortCases(
-      [baseCase, reviewed],
-      "manual_review",
-      "reviewed"
+      [baseCase, strongInterest],
+      "A",
+      "strong_interest"
     );
 
-    expect(result.map((item) => item.id)).toEqual(["reviewed"]);
+    expect(result.map((item) => item.id)).toEqual(["strong-interest"]);
+  });
+
+  it("renders assessment, receive method, lead grade, and added state labels", () => {
+    const source = readFileSync("components/case-table.tsx", "utf8");
+
+    expect(source).toContain("评估编号");
+    expect(source).toContain("线索等级");
+    expect(source).toContain("接收方式");
+    expect(source).toContain("已点击企微");
   });
 });

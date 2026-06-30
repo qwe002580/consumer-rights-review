@@ -79,7 +79,7 @@ export async function POST(request: Request) {
             intake: parsed.data,
             analysis,
             reviewFlag: analysis.review_flag,
-            status: "new"
+            status: "uncontacted"
           }
         });
         break;

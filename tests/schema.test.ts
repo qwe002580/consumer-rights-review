@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { caseStatusLabels, intakeSchema, reviewFlagLabels, scenarioLabels } from "../lib/schema";
+import {
+  caseStatusLabels,
+  caseUpdateSchema,
+  intakeSchema,
+  reviewFlagLabels,
+  scenarioLabels
+} from "../lib/schema";
 
 const validIntake = {
   clientName: "王女士",
@@ -35,12 +41,24 @@ describe("schema labels", () => {
 
   it("defines all operator case statuses", () => {
     expect(Object.keys(caseStatusLabels)).toEqual([
-      "new",
-      "reviewed",
-      "contacted",
-      "on_hold",
-      "closed"
+      "uncontacted",
+      "wechat_added",
+      "no_answer",
+      "communicated",
+      "strong_interest",
+      "not_now",
+      "converted",
+      "invalid"
     ]);
+  });
+
+  it("accepts conversion follow-up statuses for case updates", () => {
+    expect(
+      caseUpdateSchema.parse({
+        status: "strong_interest",
+        operatorNotes: "已约复核"
+      })
+    ).toEqual({ status: "strong_interest", operatorNotes: "已约复核" });
   });
 
   it("allows page-only delivery without contact details", () => {
