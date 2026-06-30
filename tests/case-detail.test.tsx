@@ -5,8 +5,12 @@ import { CaseDetail } from "../components/case-detail";
 
 const baseProps = {
   amount: 12800,
+  assessmentNo: "11399-20260623-0001",
+  addedWechat: true,
+  addedWechatAt: "2026-06-23T09:00:00.000Z",
   clientName: "王女士",
   contact: "13800000000",
+  contactTime: "evening",
   createdAt: "2026-06-23T08:30:00.000Z",
   id: "case_1",
   intake: {
@@ -21,11 +25,25 @@ const baseProps = {
     evidence: ["payment", "chat"],
     obstacles: ["missing_evidence"],
     goal: "full_refund",
-    summary: "商家拒绝退款"
+    summary: "商家拒绝退款",
+    merchantName: "某培训机构",
+    merchantPromise: "承诺可按课时退费",
+    receiveMethod: "phone",
+    wechatId: "",
+    phone: "13800000000",
+    contactTime: "evening",
+    willingToSupplement: "yes"
   },
+  leadScore: "A",
+  merchantName: "某培训机构",
+  merchantPromise: "承诺可按课时退费",
   operatorNotes: "",
+  phone: "13800000000",
+  receiveMethod: "phone",
   scenario: "education",
-  status: "new"
+  status: "uncontacted",
+  wechatId: "",
+  willingToSupplement: "yes"
 };
 
 describe("case detail", () => {
@@ -57,6 +75,16 @@ describe("case detail", () => {
     expect(html).toContain('href="/cases"');
     expect(html).toContain("返回案件列表");
     expect(html).toContain("一键复制内部案件摘要");
+    expect(html).toContain("评估编号");
+    expect(html).toContain("11399-20260623-0001");
+    expect(html).toContain("线索等级");
+    expect(html).toContain("线索评分依据");
+    expect(html).toContain("争议金额较高 +2");
+    expect(html).toContain("已点击企微");
+    expect(html).toContain("企微点击时间");
+    expect(html).toContain("某培训机构");
+    expect(html).toContain("承诺可按课时退费");
+    expect(html).toContain("接收方式");
     expect(html).toContain("达成全部诉求概率");
     expect(html).toContain("取得实质处理结果概率");
     expect(html).toContain("完整处理策略");
@@ -81,5 +109,14 @@ describe("case detail", () => {
 
     expect(html).toContain("旧案件仍可继续推进");
     expect(html).toContain("尚未评估");
+  });
+
+  it("maps a legacy status to a valid follow-up option", () => {
+    const html = renderToStaticMarkup(
+      <CaseDetail {...baseProps} analysis={null} status="contacted" />
+    );
+
+    expect(html).toContain('<option value="communicated" selected="">已沟通</option>');
+    expect(html).not.toContain('value="contacted"');
   });
 });

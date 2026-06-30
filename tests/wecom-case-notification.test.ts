@@ -6,6 +6,9 @@ import {
 
 const caseSummary = {
   id: "case_123",
+  assessmentNo: "11399-20260621-0001",
+  leadScore: "A",
+  receiveMethod: "wechat",
   scenario: "education",
   amount: 6800,
   stage: "deadlock",
@@ -24,10 +27,11 @@ describe("Enterprise WeChat case notifications", () => {
     const message = buildNewCaseNotification(caseSummary);
 
     expect(message).toContain("新退款纠纷案件");
-    expect(message).toContain("case_123");
+    expect(message).toContain("评估编号：11399-20260621-0001");
+    expect(message).toContain("线索等级：A");
+    expect(message).toContain("接收方式：微信");
     expect(message).toContain("教培退费");
     expect(message).toContain("¥6,800");
-    expect(message).toContain("多轮沟通后仍无进展");
     expect(message).toContain("建议尽快联系");
     expect(message).toContain(
       "https://consumer-rights-review.zeabur.app/cases/case_123"
@@ -41,6 +45,11 @@ describe("Enterprise WeChat case notifications", () => {
     expect(message).not.toContain("联系方式");
     expect(message).not.toContain("手机号");
     expect(message).not.toContain("微信号");
+    expect(message).not.toContain("wx-secret");
+    expect(message).not.toContain("13800138000");
+    expect(message).not.toContain("承诺可全额退款");
+    expect(message).not.toContain("用户叙述了完整详细案情");
+    expect(message).not.toContain("完整分析总结");
   });
 
   it("skips delivery when no webhook is configured", async () => {

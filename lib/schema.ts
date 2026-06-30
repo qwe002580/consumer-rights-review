@@ -1,5 +1,41 @@
 import { z } from "zod";
 
+export type CalendarDate = { year: number; month: number; day: number };
+
+export function getShanghaiCalendarDate(date: Date): CalendarDate {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+
+  return { year: value("year"), month: value("month"), day: value("day") };
+}
+
+export function parseValidPurchaseDate(value: string, now = new Date()): CalendarDate | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const purchase = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+  const utcDate = new Date(0);
+  utcDate.setUTCHours(0, 0, 0, 0);
+  utcDate.setUTCFullYear(purchase.year, purchase.month - 1, purchase.day);
+  if (
+    utcDate.getUTCFullYear() !== purchase.year ||
+    utcDate.getUTCMonth() + 1 !== purchase.month ||
+    utcDate.getUTCDate() !== purchase.day
+  ) {
+    return null;
+  }
+
+  const current = getShanghaiCalendarDate(now);
+  const dateKey = (date: CalendarDate) => date.year * 10000 + date.month * 100 + date.day;
+  return dateKey(purchase) <= dateKey(current) ? purchase : null;
+}
+
 export const scenarioLabels = {
   education: "教培退费",
   medical_beauty: "医美纠纷",
@@ -83,19 +119,42 @@ export const reviewFlagLabels = {
 } as const;
 
 export const caseStatusLabels = {
+  uncontacted: "未联系",
+  wechat_added: "已加企微",
+  no_answer: "未接通",
+  communicated: "已沟通",
+  strong_interest: "强意向",
+  not_now: "暂不处理",
+  converted: "已转化",
+  invalid: "无效线索"
+} as const;
+
+const legacyCaseStatusLabels: Record<string, string> = {
   new: "新提交",
   reviewed: "已复核",
   contacted: "已联系",
   on_hold: "暂缓处理",
   closed: "已关闭"
-} as const;
+};
+
+const legacyCaseStatusMap: Partial<Record<string, keyof typeof caseStatusLabels>> = {
+  new: "uncontacted",
+  reviewed: "communicated",
+  contacted: "communicated",
+  on_hold: "not_now",
+  closed: "invalid"
+};
 
 export const intakeSchema = z.object({
   clientName: z.string().min(1),
-  contact: z.string().min(1),
+  contact: z.string().default(""),
   scenario: z.string().min(1),
   amount: z.number().int().positive(),
-  purchaseDate: z.string().min(1),
+  purchaseDate: z.string().superRefine((value, ctx) => {
+    if (!parseValidPurchaseDate(value)) {
+      ctx.addIssue({ code: "custom", message: "请输入有效且不晚于今天的购买日期" });
+    }
+  }),
   paymentMethod: z.string().min(1),
   stage: z.string().min(1),
   issues: z.array(z.string()).min(1),
@@ -106,7 +165,30 @@ export const intakeSchema = z.object({
   agreementStatus: z.string().optional(),
   installmentStatus: z.string().optional(),
   platformResult: z.string().optional(),
-  missingEvidenceType: z.string().optional()
+  missingEvidenceType: z.string().optional(),
+  merchantName: z.string().trim().min(1),
+  merchantPromise: z.string().trim().min(1),
+  receiveMethod: z.enum(["wechat", "sms", "phone", "page"]),
+  wechatId: z.string().default(""),
+  phone: z.string().trim().default(""),
+  contactTime: z.union([
+    z.enum(["now", "30m", "afternoon", "evening", "tomorrow"]),
+    z.literal("")
+  ]).default(""),
+  willingToSupplement: z.enum(["yes", "not_now", "unknown"])
+}).superRefine((value, ctx) => {
+  if (value.receiveMethod === "wechat" && !value.wechatId.trim()) {
+    ctx.addIssue({ code: "custom", path: ["wechatId"], message: "请输入微信号" });
+  }
+  if (["sms", "phone"].includes(value.receiveMethod) && !/^1\d{10}$/.test(value.phone)) {
+    ctx.addIssue({ code: "custom", path: ["phone"], message: "请输入有效手机号" });
+  }
+  if (
+    value.receiveMethod === "phone" &&
+    !["now", "30m", "afternoon", "evening", "tomorrow"].includes(value.contactTime)
+  ) {
+    ctx.addIssue({ code: "custom", path: ["contactTime"], message: "请选择方便沟通时间" });
+  }
 });
 
 export const probabilityRangeSchema = z.object({
@@ -138,16 +220,22 @@ export const legacyAnalysisOutputSchema = z.object({
   ])
 });
 
+export const evidenceCompletenessSchema = z.enum([
+  "complete",
+  "partial",
+  "insufficient",
+  "review_needed"
+]);
+
 export const modelAnalysisSchema = z.object({
   summary: z.string().min(1),
+  opportunity: z.enum(["high", "medium_high", "medium", "low", "unclear"]),
+  evidence_completeness: evidenceCompletenessSchema,
   favorable_factors: z.array(z.string()).min(1),
   adverse_factors: z.array(z.string()).min(1),
   decisive_issues: z.array(z.string()).min(1),
-  strategy: z.string().min(1),
-  next_steps: z.array(z.string()).min(2),
-  public_stage_titles: z.array(z.string()).min(1).max(4),
   materials: z.array(z.string()).min(1),
-  communication: z.string().min(1),
+  strategy_direction: z.string().min(1),
   review_flag: z.enum([
     "self_service",
     "manual_review",
@@ -156,18 +244,15 @@ export const modelAnalysisSchema = z.object({
   ])
 });
 
-export const analysisOutputSchema = modelAnalysisSchema.extend({
-  probability: probabilityAssessmentSchema
-});
+export const analysisOutputSchema = modelAnalysisSchema;
 
 export const publicAnalysisSchema = z.object({
   summary: z.string().min(1),
-  favorable_factors: z.array(z.string()),
-  adverse_factors: z.array(z.string()),
-  first_step: z.string().min(1),
-  later_stage_titles: z.array(z.string()),
-  materials: z.array(z.string()),
-  probability: probabilityAssessmentSchema,
+  opportunity: modelAnalysisSchema.shape.opportunity,
+  evidenceCompleteness: evidenceCompletenessSchema,
+  riskPoints: z.array(z.string()).max(4),
+  materialGaps: z.array(z.string()).max(4),
+  manualReviewRecommended: z.boolean(),
   review_flag: modelAnalysisSchema.shape.review_flag
 });
 
@@ -177,13 +262,54 @@ export type AnalysisOutput = z.infer<typeof analysisOutputSchema>;
 export type LegacyAnalysisOutput = z.infer<typeof legacyAnalysisOutputSchema>;
 export type PublicAnalysis = z.infer<typeof publicAnalysisSchema>;
 
-export type StoredAnalysisDisplay = Omit<AnalysisOutput, "probability"> & {
+export type StoredAnalysisDisplay = {
+  summary: string;
+  favorable_factors: string[];
+  adverse_factors: string[];
+  decisive_issues: string[];
+  strategy: string;
+  next_steps: string[];
+  public_stage_titles: string[];
+  materials: string[];
+  communication: string;
+  review_flag: ModelAnalysis["review_flag"];
   probability: ProbabilityAssessment | null;
 };
 
+const priorAnalysisOutputSchema = z.object({
+  summary: z.string().min(1),
+  favorable_factors: z.array(z.string()),
+  adverse_factors: z.array(z.string()),
+  decisive_issues: z.array(z.string()),
+  strategy: z.string(),
+  next_steps: z.array(z.string()),
+  public_stage_titles: z.array(z.string()),
+  materials: z.array(z.string()),
+  communication: z.string(),
+  review_flag: modelAnalysisSchema.shape.review_flag,
+  probability: probabilityAssessmentSchema.optional()
+});
+
 export function normalizeStoredAnalysis(value: unknown): StoredAnalysisDisplay | null {
-  const current = analysisOutputSchema.safeParse(value);
-  if (current.success) return current.data;
+  const current = modelAnalysisSchema.safeParse(value);
+  if (current.success) {
+    return {
+      summary: current.data.summary,
+      favorable_factors: current.data.favorable_factors,
+      adverse_factors: current.data.adverse_factors,
+      decisive_issues: current.data.decisive_issues,
+      strategy: current.data.strategy_direction,
+      next_steps: [],
+      public_stage_titles: [],
+      materials: current.data.materials,
+      communication: "新案件仅生成诊断，不生成沟通话术。",
+      review_flag: current.data.review_flag,
+      probability: null
+    };
+  }
+
+  const prior = priorAnalysisOutputSchema.safeParse(value);
+  if (prior.success) return { ...prior.data, probability: prior.data.probability ?? null };
 
   const legacy = legacyAnalysisOutputSchema.safeParse(value);
   if (!legacy.success) return null;
@@ -204,7 +330,21 @@ export function normalizeStoredAnalysis(value: unknown): StoredAnalysisDisplay |
 }
 
 export const caseUpdateSchema = z.object({
-  status: z.enum(["new", "reviewed", "contacted", "on_hold", "closed"]),
+  status: z.enum([
+    "uncontacted",
+    "wechat_added",
+    "no_answer",
+    "communicated",
+    "strong_interest",
+    "not_now",
+    "converted",
+    "invalid",
+    "new",
+    "reviewed",
+    "contacted",
+    "on_hold",
+    "closed"
+  ]),
   operatorNotes: z.string().default("")
 });
 
@@ -236,7 +376,42 @@ export function getReviewFlagLabel(value: string | null | undefined) {
 }
 
 export function getCaseStatusLabel(value: string) {
-  return caseStatusLabels[value as keyof typeof caseStatusLabels] ?? value;
+  return caseStatusLabels[value as keyof typeof caseStatusLabels] ?? legacyCaseStatusLabels[value] ?? value;
+}
+
+export function normalizeCaseStatus(value: string): string {
+  return legacyCaseStatusMap[value] ?? value;
+}
+
+export function getReceiveMethodLabel(value: string) {
+  const labels: Record<string, string> = {
+    wechat: "微信",
+    sms: "短信",
+    phone: "电话",
+    page: "页面查看",
+    legacy: "历史记录"
+  };
+  return labels[value] ?? value;
+}
+
+export function getContactTimeLabel(value: string) {
+  const labels: Record<string, string> = {
+    now: "现在方便",
+    "30m": "30分钟后",
+    afternoon: "今天下午",
+    evening: "今天晚上",
+    tomorrow: "明天联系"
+  };
+  return labels[value] ?? (value || "未填写");
+}
+
+export function getSupplementWillingnessLabel(value: string) {
+  const labels: Record<string, string> = {
+    yes: "愿意补充",
+    not_now: "暂时不方便",
+    unknown: "先看结果再说"
+  };
+  return labels[value] ?? value;
 }
 
 export function normalizeIntakeForDisplay(intake: IntakeInput) {

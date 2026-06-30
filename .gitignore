@@ -10,3 +10,4 @@ outputs
 work
 .superpowers
 .worktrees
+*.tsbuildinfo

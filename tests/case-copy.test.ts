@@ -22,10 +22,19 @@ const analysis = {
 
 const input = {
   id: "case_123",
+  assessmentNo: "11399-20260623-0001",
+  addedWechat: true,
+  addedWechatAt: "2026-06-23T09:00:00.000Z",
   createdAt: "2026-06-23T08:30:00.000Z",
-  status: "new",
+  status: "strong_interest",
   clientName: "王女士",
   contact: "wx123456",
+  contactTime: "",
+  leadScore: "A",
+  merchantName: "某培训机构",
+  merchantPromise: "承诺可按课时退费",
+  phone: "",
+  receiveMethod: "wechat",
   scenario: "education",
   amount: 12800,
   operatorNotes: "明日上午联系",
@@ -41,8 +50,17 @@ const input = {
     evidence: ["payment", "chat"],
     obstacles: ["missing_evidence"],
     goal: "full_refund",
-    summary: "商家拒绝退款"
+    summary: "商家拒绝退款",
+    merchantName: "某培训机构",
+    merchantPromise: "承诺可按课时退费",
+    receiveMethod: "wechat",
+    wechatId: "wx123456",
+    phone: "",
+    contactTime: "",
+    willingToSupplement: "yes"
   },
+  wechatId: "wx123456",
+  willingToSupplement: "yes",
   analysis
 };
 
@@ -52,10 +70,19 @@ describe("internal case summary", () => {
 
     expect(text).toContain("【内部案件摘要】");
     expect(text).toContain("案件编号：case_123");
-    expect(text).toContain("状态：新提交");
+    expect(text).toContain("评估编号：11399-20260623-0001");
+    expect(text).toContain("线索等级：A");
+    expect(text).toContain("评分依据：争议金额较高 +2");
+    expect(text).toContain("购买时间在两年内 +2");
+    expect(text).toContain("企微添加：已点击添加");
+    expect(text).toContain("企微点击时间：");
+    expect(text).toContain("状态：强意向");
     expect(text).toContain("优先级：建议尽快联系");
     expect(text).toContain("客户称呼：王女士");
-    expect(text).toContain("联系方式：wx123456");
+    expect(text).toContain("接收方式：微信");
+    expect(text).toContain("微信号：wx123456");
+    expect(text).toContain("商家/机构：某培训机构");
+    expect(text).toContain("商家承诺：承诺可按课时退费");
     expect(text).toContain("支付金额：¥12,800");
     expect(text).toContain("达成全部诉求概率：30%–45%");
     expect(text).toContain("取得实质处理结果概率：55%–70%");
@@ -79,5 +106,16 @@ describe("internal case summary", () => {
         expect(text.indexOf(heading)).toBeGreaterThan(text.indexOf(headings[index - 1]));
       }
     });
+  });
+
+  it("calculates score reasons at submission time instead of the current date", () => {
+    const text = buildInternalCaseSummary({
+      ...input,
+      createdAt: "2028-06-23T08:30:00.000Z",
+      intake: { ...input.intake, purchaseDate: "2026-06-01" }
+    });
+
+    expect(text).toContain("购买时间在三年内 +1");
+    expect(text).not.toContain("购买时间在两年内 +2");
   });
 });
