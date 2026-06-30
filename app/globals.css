@@ -1332,11 +1332,31 @@ textarea {
     padding: 20px 16px;
   }
 
-   .applicability-grid,
    .lead-capture-grid,
    .receive-method-grid,
    .result-context-grid {
      grid-template-columns: 1fr;
+   }
+
+   .applicability-grid {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+     column-gap: 12px;
+   }
+
+   .applicability-item {
+     grid-template-columns: 20px minmax(0, 1fr);
+     gap: 7px;
+     min-height: 42px;
+   }
+
+   .applicability-item span {
+     width: 18px;
+     height: 18px;
+     font-size: 10px;
+   }
+
+   .applicability-item strong {
+     font-size: 12px;
    }
 
    .hero-card-balanced {
@@ -1344,7 +1364,19 @@ textarea {
    }
 
    .hero-proof-card {
-     padding: 18px;
+     display: flex;
+     flex-wrap: wrap;
+     align-items: center;
+     gap: 6px 14px;
+     padding: 13px 16px;
+   }
+
+   .hero-proof-card strong {
+     font-size: 21px;
+   }
+
+   .hero-proof-card span {
+     font-size: 12px;
    }
 
   .form-panel,
