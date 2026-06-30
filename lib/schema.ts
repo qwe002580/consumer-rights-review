@@ -137,6 +137,14 @@ const legacyCaseStatusLabels: Record<string, string> = {
   closed: "已关闭"
 };
 
+const legacyCaseStatusMap: Partial<Record<string, keyof typeof caseStatusLabels>> = {
+  new: "uncontacted",
+  reviewed: "communicated",
+  contacted: "communicated",
+  on_hold: "not_now",
+  closed: "invalid"
+};
+
 export const intakeSchema = z.object({
   clientName: z.string().min(1),
   contact: z.string().default(""),
@@ -369,6 +377,10 @@ export function getReviewFlagLabel(value: string | null | undefined) {
 
 export function getCaseStatusLabel(value: string) {
   return caseStatusLabels[value as keyof typeof caseStatusLabels] ?? legacyCaseStatusLabels[value] ?? value;
+}
+
+export function normalizeCaseStatus(value: string): string {
+  return legacyCaseStatusMap[value] ?? value;
 }
 
 export function getReceiveMethodLabel(value: string) {

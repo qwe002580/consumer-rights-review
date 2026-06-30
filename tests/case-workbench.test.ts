@@ -63,6 +63,16 @@ describe("case workbench", () => {
     expect(result.map((item) => item.id)).toEqual(["strong-interest"]);
   });
 
+  it("includes legacy statuses in their equivalent follow-up filters", () => {
+    const legacyNew = { ...baseCase, id: "legacy-new", status: "new" };
+    const legacyContacted = { ...baseCase, id: "legacy-contacted", status: "contacted" };
+
+    expect(filterAndSortCases([legacyNew, legacyContacted], "all", "uncontacted"))
+      .toHaveLength(1);
+    expect(filterAndSortCases([legacyNew, legacyContacted], "all", "communicated"))
+      .toHaveLength(1);
+  });
+
   it("renders assessment, receive method, lead grade, and added state labels", () => {
     const source = readFileSync("components/case-table.tsx", "utf8");
 

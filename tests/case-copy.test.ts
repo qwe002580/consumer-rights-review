@@ -73,6 +73,7 @@ describe("internal case summary", () => {
     expect(text).toContain("评估编号：11399-20260623-0001");
     expect(text).toContain("线索等级：A");
     expect(text).toContain("评分依据：争议金额较高 +2");
+    expect(text).toContain("购买时间在两年内 +2");
     expect(text).toContain("企微添加：已点击添加");
     expect(text).toContain("企微点击时间：");
     expect(text).toContain("状态：强意向");
@@ -105,5 +106,16 @@ describe("internal case summary", () => {
         expect(text.indexOf(heading)).toBeGreaterThan(text.indexOf(headings[index - 1]));
       }
     });
+  });
+
+  it("calculates score reasons at submission time instead of the current date", () => {
+    const text = buildInternalCaseSummary({
+      ...input,
+      createdAt: "2028-06-23T08:30:00.000Z",
+      intake: { ...input.intake, purchaseDate: "2026-06-01" }
+    });
+
+    expect(text).toContain("购买时间在三年内 +1");
+    expect(text).not.toContain("购买时间在两年内 +2");
   });
 });

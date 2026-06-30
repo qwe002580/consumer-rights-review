@@ -18,6 +18,7 @@ import {
   getSupplementWillingnessLabel,
   intakeSchema,
   normalizeIntakeForDisplay,
+  normalizeCaseStatus,
   normalizeStoredAnalysis
 } from "@/lib/schema";
 
@@ -84,7 +85,7 @@ function rangeLabel(range: { min: number; max: number } | undefined) {
 }
 
 export function CaseDetail(props: CaseDetailProps) {
-  const [status, setStatus] = useState(props.status);
+  const [status, setStatus] = useState(normalizeCaseStatus(props.status));
   const [operatorNotes, setOperatorNotes] = useState(props.operatorNotes);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -94,7 +95,9 @@ export function CaseDetail(props: CaseDetailProps) {
     ? normalizeIntakeForDisplay(parsedIntake.data)
     : null;
   const analysis = normalizeStoredAnalysis(props.analysis);
-  const leadScore = parsedIntake.success ? calculateLeadScore(parsedIntake.data) : null;
+  const leadScore = parsedIntake.success
+    ? calculateLeadScore(parsedIntake.data, new Date(props.createdAt))
+    : null;
   const receiveMethod = props.receiveMethod || intake?.receiveMethod || "legacy";
   const merchantName = props.merchantName || intake?.merchantName || "未填写";
   const merchantPromise = props.merchantPromise || intake?.merchantPromise || "未填写";

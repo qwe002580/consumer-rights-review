@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
   getCaseStatusLabel,
   getReceiveMethodLabel,
-  getScenarioLabel
+  getScenarioLabel,
+  normalizeCaseStatus
 } from "@/lib/schema";
 
 export type CaseListItem = {
@@ -64,7 +65,7 @@ export function filterAndSortCases(
 ) {
   return cases
     .filter((item) => gradeFilter === "all" || item.leadScore === gradeFilter)
-    .filter((item) => statusFilter === "all" || item.status === statusFilter)
+    .filter((item) => statusFilter === "all" || normalizeCaseStatus(item.status) === statusFilter)
     .sort((a, b) => {
       const gradeDifference =
         (gradePriority[b.leadScore] ?? 0) - (gradePriority[a.leadScore] ?? 0);

@@ -74,7 +74,7 @@ export function buildInternalCaseSummary(input: InternalCaseSummaryInput) {
   const analysis = normalizeStoredAnalysis(input.analysis);
   const probability = analysis?.probability;
   const scoreReasons = parsedIntake.success
-    ? calculateLeadScore(parsedIntake.data).reasons
+    ? calculateLeadScore(parsedIntake.data, new Date(input.createdAt)).reasons
     : [];
 
   return [

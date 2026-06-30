@@ -12,7 +12,15 @@ export async function PATCH(
   }
 
   const { id } = await context.params;
-  const json = await request.json();
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "INVALID_CASE_UPDATE", details: "请求内容格式不正确。" },
+      { status: 400 }
+    );
+  }
   const parsed = caseUpdateSchema.safeParse(json);
 
   if (!parsed.success) {

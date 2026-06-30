@@ -110,4 +110,13 @@ describe("case detail", () => {
     expect(html).toContain("旧案件仍可继续推进");
     expect(html).toContain("尚未评估");
   });
+
+  it("maps a legacy status to a valid follow-up option", () => {
+    const html = renderToStaticMarkup(
+      <CaseDetail {...baseProps} analysis={null} status="contacted" />
+    );
+
+    expect(html).toContain('<option value="communicated" selected="">已沟通</option>');
+    expect(html).not.toContain('value="contacted"');
+  });
 });
