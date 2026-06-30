@@ -99,27 +99,6 @@ const applicableSituations = [
   "付款后服务未履行"
 ];
 
-const trustModules = [
-  {
-    title: "先看退费空间",
-    copy: "很多退款纠纷不是不能处理，而是材料顺序和沟通节点没抓准。"
-  },
-  {
-    title: "不直接给模板",
-    copy: "页面只给初步诊断和材料缺口，关键处理方式需要结合完整证据判断。"
-  },
-  {
-    title: "适合先筛查",
-    copy: "如果金额、时间、证据存在差异，先做一次初筛能减少盲目投诉。"
-  }
-];
-
-const complaintFailures = [
-  "只说想退款，没有说清楚商家承诺和实际履行差距",
-  "付款凭证、聊天记录、合同截图没有形成证据链",
-  "过早把投诉、协商、起诉流程混在一起，反而让对方抓住漏洞"
-];
-
 type IntakeFormState = Omit<IntakeInput, "amount"> & {
   amount: string;
 };
@@ -268,15 +247,6 @@ export function IntakeForm() {
         </div>
       </section>
 
-      <section className="trust-module-grid" aria-label="自测说明">
-        {trustModules.map((item) => (
-          <article key={item.title}>
-            <h2>{item.title}</h2>
-            <p>{item.copy}</p>
-          </article>
-        ))}
-      </section>
-
       <section className="applicability-panel" aria-labelledby="applicability-title">
         <div className="applicability-heading">
           <h2 id="applicability-title">适合以下情况</h2>
@@ -290,27 +260,6 @@ export function IntakeForm() {
             </div>
           ))}
         </div>
-      </section>
-
-      <section className="screening-panel">
-        <div>
-          <h2>为什么自己投诉后还是没结果</h2>
-          <p>多数卡点不在“有没有理”，而在事实、证据和表达顺序是否能被平台或商家接受。</p>
-        </div>
-        <ol>
-          {complaintFailures.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="submission-flow" aria-label="提交流程">
-        {["纠纷类型", "付款情况", "处理进度", "已有材料", "接收结果"].map((item, index) => (
-          <div key={item}>
-            <span>{index + 1}</span>
-            <strong>{item}</strong>
-          </div>
-        ))}
       </section>
 
       <div className="layout-grid" id="intake">

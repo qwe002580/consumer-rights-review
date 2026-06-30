@@ -22,13 +22,14 @@ describe("customer refund intake", () => {
     vi.stubGlobal("React", React);
   });
 
-  it("explains the refund self-check and who it is for", () => {
+  it("keeps the entry focused on applicable situations and the assessment form", () => {
     const html = renderToStaticMarkup(<IntakeForm />);
 
     expect(html).toContain("先判断能不能退，再决定怎么处理");
     expect(html).toContain("开始免费案情初筛");
-    expect(html).toContain("很多退款纠纷不是不能处理，而是材料顺序和沟通节点没抓准。");
-    expect(html).toContain("为什么自己投诉后还是没结果");
+    expect(html).not.toContain("很多退款纠纷不是不能处理，而是材料顺序和沟通节点没抓准。");
+    expect(html).not.toContain("为什么自己投诉后还是没结果");
+    expect(html).not.toContain('class="submission-flow"');
     expect(html).toContain("我们会先做初步筛查");
     applicableSituations.forEach((situation) => expect(html).toContain(situation));
   });
@@ -129,7 +130,7 @@ describe("customer refund intake", () => {
     const css = readFileSync("app/globals.css", "utf8");
 
     expect(css).toContain(".applicability-grid");
-    expect(css).toContain(".trust-module-grid");
+    expect(css).not.toContain(".trust-module-grid");
     expect(css).toContain(".receive-method-grid");
     expect(css).toContain(".lead-capture-section");
     expect(css).toContain(".legal-disclaimer");

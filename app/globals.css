@@ -253,47 +253,12 @@ h1 {
   line-height: 1.7;
 }
 
-.trust-module-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.trust-module-grid article,
-.screening-panel,
-.submission-flow {
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(255, 252, 248, 0.72);
-  box-shadow: 0 14px 32px rgba(43, 31, 20, 0.06);
-}
-
-.trust-module-grid article {
-  padding: 22px;
-}
-
-.trust-module-grid h2,
-.screening-panel h2 {
-  margin: 0 0 10px;
-  font-family: Georgia, "Songti SC", serif;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.trust-module-grid p,
-.screening-panel p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
 .applicability-panel {
   display: grid;
   grid-template-columns: minmax(190px, 0.34fr) minmax(0, 1fr);
-  gap: clamp(24px, 5vw, 64px);
+  gap: clamp(18px, 3vw, 40px);
   margin-bottom: 18px;
-  padding: 30px 32px;
+  padding: 22px 26px;
   border-top: 1px solid rgba(32, 58, 51, 0.22);
   border-bottom: 1px solid rgba(32, 58, 51, 0.22);
   background:
@@ -325,7 +290,7 @@ h1 {
   grid-template-columns: 26px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  min-height: 54px;
+  min-height: 46px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -344,86 +309,6 @@ h1 {
 .applicability-item strong {
   font-size: 14px;
   line-height: 1.45;
-}
-
-.screening-panel {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.36fr) minmax(0, 1fr);
-  gap: clamp(18px, 4vw, 42px);
-  margin-bottom: 18px;
-  padding: 28px 32px;
-}
-
-.screening-panel ol {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  counter-reset: complaint;
-  list-style: none;
-}
-
-.screening-panel li {
-  position: relative;
-  min-height: 44px;
-  padding: 11px 14px 11px 48px;
-  border: 1px solid rgba(32, 58, 51, 0.12);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.58);
-  color: #453c34;
-  line-height: 1.55;
-}
-
-.screening-panel li::before {
-  position: absolute;
-  top: 11px;
-  left: 14px;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--forest);
-  color: #fff;
-  content: counter(complaint);
-  counter-increment: complaint;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.submission-flow {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0;
-  margin-bottom: 18px;
-  overflow: hidden;
-}
-
-.submission-flow div {
-  display: grid;
-  gap: 8px;
-  padding: 18px;
-  border-right: 1px solid var(--line);
-}
-
-.submission-flow div:last-child {
-  border-right: 0;
-}
-
-.submission-flow span {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(216, 81, 47, 0.12);
-  color: var(--signal);
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.submission-flow strong {
-  font-size: 14px;
 }
 
 .layout-grid {
@@ -1410,9 +1295,7 @@ textarea {
 
 @media (max-width: 960px) {
   .layout-grid,
-  .report-grid,
-  .trust-module-grid,
-  .screening-panel {
+  .report-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1445,8 +1328,8 @@ textarea {
   }
 
   .applicability-panel {
-    gap: 20px;
-    padding: 26px 18px;
+    gap: 14px;
+    padding: 20px 16px;
   }
 
    .applicability-grid,
@@ -1456,22 +1339,12 @@ textarea {
      grid-template-columns: 1fr;
    }
 
-   .hero-card-balanced,
-   .submission-flow {
+   .hero-card-balanced {
      grid-template-columns: 1fr;
    }
 
    .hero-proof-card {
      padding: 18px;
-   }
-
-   .submission-flow div {
-     border-right: 0;
-     border-bottom: 1px solid var(--line);
-   }
-
-   .submission-flow div:last-child {
-     border-bottom: 0;
    }
 
   .form-panel,
