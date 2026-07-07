@@ -1,4 +1,6 @@
 import {
+  getContactTimeLabel,
+  getReceiveMethodLabel,
   getReviewFlagLabel,
   getScenarioLabel,
   getStageLabel
@@ -9,6 +11,10 @@ export type NewCaseNotification = {
   assessmentNo: string;
   leadScore: string;
   receiveMethod: string;
+  contact: string;
+  wechatId: string;
+  phone: string;
+  contactTime: string;
   scenario: string;
   amount: number;
   stage: string;
@@ -27,15 +33,28 @@ function normalizeSiteUrl(value: string) {
   return value.replace(/\/$/, "");
 }
 
-function getReceiveMethodLabel(value: string) {
-  const labels: Record<string, string> = {
-    wechat: "微信",
-    sms: "短信",
-    phone: "电话",
-    page: "页面"
-  };
+function formatCustomerContact(input: NewCaseNotification) {
+  const contact = input.contact.trim();
+  const wechatId = input.wechatId.trim();
+  const phone = input.phone.trim();
 
-  return labels[value] ?? value;
+  if (input.receiveMethod === "wechat" && wechatId) {
+    return `微信 ${wechatId}`;
+  }
+
+  if (input.receiveMethod === "phone" && phone) {
+    return `电话 ${phone}（${getContactTimeLabel(input.contactTime)}）`;
+  }
+
+  if (input.receiveMethod === "sms" && phone) {
+    return `短信 ${phone}`;
+  }
+
+  if (contact) {
+    return contact;
+  }
+
+  return "未留，需在后台查看详情";
 }
 
 export function buildNewCaseNotification(input: NewCaseNotification) {
@@ -52,6 +71,7 @@ export function buildNewCaseNotification(input: NewCaseNotification) {
     `> 评估编号：${input.assessmentNo}`,
     `> 线索等级：${input.leadScore}`,
     `> 接收方式：${getReceiveMethodLabel(input.receiveMethod)}`,
+    `> 客户联系方式：${formatCustomerContact(input)}`,
     `> 纠纷类型：${getScenarioLabel(input.scenario)}`,
     `> 金额：¥${amount}`,
     `> 当前进度：${getStageLabel(input.stage)}`,
