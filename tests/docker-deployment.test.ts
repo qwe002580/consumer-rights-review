@@ -2,6 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("Docker deployment", () => {
+  it("documents the WeCom customer service link used by consultation buttons", () => {
+    const expectedUrl = "https://work.weixin.qq.com/kfid/kfc51e178c1b051d57e";
+    const envExample = readFileSync(".env.example", "utf8");
+    const productionEnvExample = readFileSync(".env.production.example", "utf8");
+
+    expect(envExample).toContain(`NEXT_PUBLIC_CONSULTATION_URL="${expectedUrl}"`);
+    expect(productionEnvExample).toContain(`NEXT_PUBLIC_CONSULTATION_URL="${expectedUrl}"`);
+  });
+
   it("generates the Prisma client before building Next.js", () => {
     const dockerfile = readFileSync("Dockerfile", "utf8");
     const generateIndex = dockerfile.indexOf("RUN npx prisma generate");
