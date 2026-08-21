@@ -8,7 +8,9 @@ import {
   type PublicAnalysis
 } from "@/lib/schema";
 import { copyTextWithFallback } from "@/lib/clipboard";
+import { buildCustomerServiceMessage } from "@/lib/customer-service-message";
 import { consultationLabel, getConsultationUrl } from "@/lib/site-config";
+import type { IntakeInput } from "@/lib/schema";
 
 type AnalysisReportProps = {
   result: PublicAnalysis | null;
@@ -16,6 +18,7 @@ type AnalysisReportProps = {
   goal: string;
   assessmentNo?: string;
   caseId?: string;
+  intake?: IntakeInput;
   leadScore?: string;
   error?: string | null;
   loading?: boolean;
@@ -103,13 +106,17 @@ function ConsultationButton({
   assessmentNo,
   caseId,
   className,
+  copyText,
   url
 }: {
   assessmentNo?: string;
   caseId?: string;
   className: string;
+  copyText: string;
   url: string;
 }) {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
   async function markAddedWechat() {
     if (!caseId || !assessmentNo) return;
     try {
@@ -123,15 +130,48 @@ function ConsultationButton({
     }
   }
 
+  async function copyCaseText() {
+    try {
+      await copyTextWithFallback(copyText, {
+        writeText: navigator.clipboard?.writeText.bind(navigator.clipboard),
+        legacyCopy: (text) => {
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.setAttribute("readonly", "");
+          textarea.style.left = "-9999px";
+          textarea.style.position = "fixed";
+          document.body.appendChild(textarea);
+          textarea.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(textarea);
+          return ok;
+        }
+      });
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 2400);
+    } catch {
+      setCopyState("failed");
+    }
+  }
+
+  function handleClick() {
+    void copyCaseText();
+    void markAddedWechat();
+  }
+
   return (
     <a
       className={className}
       href={url}
       rel="noreferrer"
       target="_blank"
-      onClick={markAddedWechat}
+      onClick={handleClick}
     >
-      {consultationLabel}
+      {copyState === "copied"
+        ? "案情已复制，去发送给客服"
+        : copyState === "failed"
+          ? "复制失败，请手动复制编号"
+          : consultationLabel}
     </a>
   );
 }
@@ -140,18 +180,20 @@ function ConsultationCard({
   assessmentNo,
   caseId,
   className,
+  copyText,
   url
 }: {
   assessmentNo?: string;
   caseId?: string;
   className: string;
+  copyText: string;
   url: string;
 }) {
   return (
     <article className={`report-card conversion-card ${className}`}>
       <div>
         <h3>建议先做一次人工复核</h3>
-        <p>添加企业微信后，发送“退款自测”和评估编号，老师会先帮你核对材料缺口。</p>
+        <p>点击后会先复制评估编号和案情摘要，再打开企业微信客服，粘贴发送即可进入人工复核。</p>
         {assessmentNo ? <p className="assessment-inline">评估编号：{assessmentNo}</p> : null}
       </div>
       <div className="conversion-actions">
@@ -159,6 +201,7 @@ function ConsultationCard({
           assessmentNo={assessmentNo}
           caseId={caseId}
           className="consultation-link"
+          copyText={copyText}
           url={url}
         />
         <CopyAssessmentButton assessmentNo={assessmentNo} />
@@ -173,11 +216,21 @@ export function AnalysisReport({
   goal,
   assessmentNo,
   caseId,
+  intake,
   leadScore,
   error = null,
   loading = false
 }: AnalysisReportProps) {
   const consultationUrl = getConsultationUrl();
+  const customerServiceMessage = buildCustomerServiceMessage({
+    assessmentNo,
+    caseId,
+    goal,
+    intake,
+    leadScore,
+    result,
+    scenario
+  });
 
   if (loading) {
     return (
@@ -251,6 +304,7 @@ export function AnalysisReport({
           assessmentNo={assessmentNo}
           caseId={caseId}
           className="conversion-card-top"
+          copyText={customerServiceMessage}
           url={consultationUrl}
         />
       ) : null}
@@ -276,6 +330,7 @@ export function AnalysisReport({
             assessmentNo={assessmentNo}
             caseId={caseId}
             className="conversion-card-footer"
+            copyText={customerServiceMessage}
             url={consultationUrl}
           />
           <div className="mobile-consultation-bar">
@@ -283,6 +338,7 @@ export function AnalysisReport({
               assessmentNo={assessmentNo}
               caseId={caseId}
               className=""
+              copyText={customerServiceMessage}
               url={consultationUrl}
             />
           </div>

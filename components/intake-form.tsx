@@ -193,6 +193,7 @@ export function buildIntakePayload(form: IntakeFormState): IntakeInput {
 export function IntakeForm() {
   const [form, setForm] = useState<IntakeFormState>(initialState);
   const [assessment, setAssessment] = useState<AssessmentResponse | null>(null);
+  const [submittedIntake, setSubmittedIntake] = useState<IntakeInput | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -225,11 +226,13 @@ export function IntakeForm() {
       }
 
       setAssessment(json as AssessmentResponse);
+      setSubmittedIntake(payload);
       requestAnimationFrame(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     } catch (submissionError) {
       setAssessment(null);
+      setSubmittedIntake(undefined);
       setError(
         submissionError instanceof Error
           ? submissionError.message
@@ -658,6 +661,7 @@ export function IntakeForm() {
             caseId={assessment?.id}
             error={error}
             goal={form.goal}
+            intake={submittedIntake}
             leadScore={assessment?.leadScore}
             loading={loading}
             result={assessment?.analysis ?? null}

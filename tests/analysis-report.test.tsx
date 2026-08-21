@@ -60,9 +60,10 @@ describe("analysis report", () => {
       />
     );
 
-    expect(html.match(/添加企业微信，免费复核/g)?.length).toBe(3);
+    expect(html.match(/复制案情并咨询客服/g)?.length).toBe(3);
     expect(html).toContain("https://work.weixin.qq.com/example");
     expect(html).toContain("复制评估编号");
+    expect(html).toContain("点击后会先复制评估编号和案情摘要");
   });
 
   it("limits public risk and material lists to four items", () => {
@@ -107,6 +108,6 @@ describe("analysis report", () => {
         scenario="education"
       />
     );
-    expect(html).not.toContain("添加企业微信，免费复核");
+    expect(html).not.toContain("复制案情并咨询客服");
   });
 });

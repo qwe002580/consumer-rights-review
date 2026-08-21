@@ -1,4 +1,4 @@
-export const consultationLabel = "添加企业微信，免费复核";
+export const consultationLabel = "复制案情并咨询客服";
 
 export function getConsultationUrl() {
   return process.env.NEXT_PUBLIC_CONSULTATION_URL?.trim() ?? "";
