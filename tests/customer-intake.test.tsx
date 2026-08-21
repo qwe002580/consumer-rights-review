@@ -9,11 +9,11 @@ import {
 } from "../components/intake-form";
 
 const applicableSituations = [
-  "商家拒绝退款",
-  "培训机构退费难",
-  "医美项目做了一半想退款",
-  "直播间/电商售后纠纷",
-  "健身卡、摄影、婚庆服务退款",
+  "教育培训退费难",
+  "医美项目效果或退款纠纷",
+  "投顾服务、荐股课程退费",
+  "国学玄学、命理课程退款",
+  "大健康调理、康养服务退款",
   "付款后服务未履行"
 ];
 
@@ -51,6 +51,16 @@ describe("customer refund intake", () => {
     expect(html).not.toContain("对方联系方式");
     expect(html).not.toContain("Case Review");
     expect(html).toContain("生成我的免费评估结果");
+  });
+
+  it("shows the main refund categories handled by the business", () => {
+    const html = renderToStaticMarkup(<IntakeForm />);
+
+    expect(html).toContain("教培退费");
+    expect(html).toContain("医美纠纷");
+    expect(html).toContain("投顾服务退费");
+    expect(html).toContain("国学玄学退费");
+    expect(html).toContain("大健康服务退费");
   });
 
   it("defines conditional result receiving fields", () => {

@@ -169,6 +169,9 @@ describe("schema labels", () => {
     expect(scenarioLabels).toMatchObject({
       education: "教培退费",
       medical_beauty: "医美纠纷",
+      investment_advisory: "投顾服务退费",
+      metaphysics: "国学玄学退费",
+      health_wellness: "大健康服务退费",
       ecommerce: "电商售后",
       live_stream: "直播间消费",
       gaming: "游戏充值",

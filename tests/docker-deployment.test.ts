@@ -20,10 +20,10 @@ describe("Docker deployment", () => {
     expect(generateIndex).toBeLessThan(buildIndex);
   });
 
-  it("does not require an optional public directory in the runner image", () => {
+  it("copies public assets into the runner image for site verification files", () => {
     const dockerfile = readFileSync("Dockerfile", "utf8");
 
-    expect(dockerfile).not.toContain("COPY --from=builder /app/public ./public");
+    expect(dockerfile).toContain("COPY --from=builder /app/public ./public");
   });
 
   it("initializes the database before starting the production server", () => {

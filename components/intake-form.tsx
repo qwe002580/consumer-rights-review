@@ -7,6 +7,9 @@ import type { IntakeInput, PublicAnalysis } from "@/lib/schema";
 const scenarioOptions = [
   { value: "education", label: "教培退费" },
   { value: "medical_beauty", label: "医美纠纷" },
+  { value: "investment_advisory", label: "投顾服务退费" },
+  { value: "metaphysics", label: "国学玄学退费" },
+  { value: "health_wellness", label: "大健康服务退费" },
   { value: "ecommerce", label: "电商售后" },
   { value: "live_stream", label: "直播间消费" },
   { value: "gaming", label: "游戏充值" },
@@ -91,12 +94,22 @@ const receiveMethodOptions = [
 }>;
 
 const applicableSituations = [
-  "商家拒绝退款",
-  "培训机构退费难",
-  "医美项目做了一半想退款",
-  "直播间/电商售后纠纷",
-  "健身卡、摄影、婚庆服务退款",
+  "教育培训退费难",
+  "医美项目效果或退款纠纷",
+  "投顾服务、荐股课程退费",
+  "国学玄学、命理课程退款",
+  "大健康调理、康养服务退款",
   "付款后服务未履行"
+];
+
+const agreementRelevantScenarios = [
+  "education",
+  "medical_beauty",
+  "investment_advisory",
+  "metaphysics",
+  "health_wellness",
+  "fitness",
+  "digital_service"
 ];
 
 type IntakeFormState = Omit<IntakeInput, "amount"> & {
@@ -151,7 +164,7 @@ export function getReceiveFieldVisibility(method: IntakeInput["receiveMethod"]) 
 }
 
 export function buildIntakePayload(form: IntakeFormState): IntakeInput {
-  const showAgreement = ["education", "medical_beauty"].includes(form.scenario);
+  const showAgreement = agreementRelevantScenarios.includes(form.scenario);
   const showInstallment = form.paymentMethod === "installment";
   const showPlatform = ["platform", "deadlock"].includes(form.stage);
   const showMissingEvidence = form.obstacles.includes("missing_evidence");
@@ -184,7 +197,7 @@ export function IntakeForm() {
   const [error, setError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  const showAgreement = ["education", "medical_beauty"].includes(form.scenario);
+  const showAgreement = agreementRelevantScenarios.includes(form.scenario);
   const showInstallment = form.paymentMethod === "installment";
   const showPlatform = ["platform", "deadlock"].includes(form.stage);
   const showMissingEvidence = form.obstacles.includes("missing_evidence");
@@ -426,7 +439,7 @@ export function IntakeForm() {
               <span>商家或机构名称</span>
               <input
                 required
-                placeholder="例如：某某培训机构、某某医美门店"
+                placeholder="例如：某某培训机构、某某医美门店、某某投顾服务"
                 value={form.merchantName}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, merchantName: event.target.value }))
@@ -438,7 +451,7 @@ export function IntakeForm() {
               <span>商家当时怎么承诺的</span>
               <input
                 required
-                placeholder="例如：承诺可退、承诺有效果、承诺按课时退"
+                placeholder="例如：承诺可退、承诺收益/效果、承诺按课时退"
                 value={form.merchantPromise}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, merchantPromise: event.target.value }))
@@ -448,9 +461,9 @@ export function IntakeForm() {
 
             {showAgreement ? (
               <label>
-                <span>协议或知情同意情况</span>
+                <span>协议、服务说明或知情同意情况</span>
                 <input
-                  placeholder="例如：已签署并持有截图"
+                  placeholder="例如：已签署合同、服务说明、知情同意书或课程协议"
                   value={form.agreementStatus ?? ""}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, agreementStatus: event.target.value }))
