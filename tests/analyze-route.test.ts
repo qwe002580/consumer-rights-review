@@ -212,6 +212,52 @@ describe("POST /api/analyze", () => {
     expect(body.analysis).not.toHaveProperty("first_step");
   });
 
+  it("returns self-service public guidance for low amount one-time payment cases while saving the full analysis", async () => {
+    mocks.createCase.mockResolvedValueOnce({
+      id: "case_low",
+      assessmentNo: "11399-20260621-0001",
+      scenario: "education",
+      amount: 2500,
+      receiveMethod: "page",
+      contact: "",
+      wechatId: "",
+      phone: "",
+      contactTime: "",
+      leadScore: "A",
+      stage: "deadlock",
+      reviewFlag: "contact_soon",
+      createdAt
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validIntake,
+          amount: 2500,
+          paymentMethod: "full"
+        }),
+        headers: { "content-type": "application/json" }
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.createCase.mock.calls[0][0].data.analysis).toBe(analysis);
+    expect(body.analysis).toEqual({
+      summary: "根据你填写的信息，本次争议金额相对较低，且属于一次性付款情形，建议先保留付款凭证、沟通记录和商家承诺内容，优先与机构继续沟通；如沟通无进展，可考虑通过 12345 等公共投诉渠道反映处理。",
+      opportunity: "low",
+      evidenceCompleteness: "partial",
+      riskPoints: [
+        "金额较低时，投入过多人工处理成本可能不划算，建议先用协商和公共投诉渠道推动。",
+        "目前更适合先整理付款凭证、聊天记录、合同或宣传承诺截图，再向机构提出明确退款诉求。"
+      ],
+      materialGaps: ["付款凭证", "与机构沟通记录", "合同或服务协议", "宣传承诺截图"],
+      manualReviewRecommended: false,
+      review_flag: "self_service"
+    });
+  });
+
   it("retries once when the generated assessment number collides", async () => {
     mocks.generateAssessmentNumber
       .mockReturnValueOnce("11399-20260621-0001")

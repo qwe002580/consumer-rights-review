@@ -79,6 +79,50 @@ describe("public analysis boundary", () => {
     expect(result.manualReviewRecommended).toBe(true);
   });
 
+  it("routes low amount one-time payment cases to self-service communication and 12345 guidance", () => {
+    const result = toPublicAnalysis(
+      {
+        ...internalAnalysis,
+        opportunity: "medium_high",
+        evidence_completeness: "partial",
+        review_flag: "contact_soon"
+      },
+      {
+        amount: 2999,
+        paymentMethod: "full"
+      }
+    );
+
+    expect(result).toEqual({
+      summary: "根据你填写的信息，本次争议金额相对较低，且属于一次性付款情形，建议先保留付款凭证、沟通记录和商家承诺内容，优先与机构继续沟通；如沟通无进展，可考虑通过 12345 等公共投诉渠道反映处理。",
+      opportunity: "low",
+      evidenceCompleteness: "partial",
+      riskPoints: [
+        "金额较低时，投入过多人工处理成本可能不划算，建议先用协商和公共投诉渠道推动。",
+        "目前更适合先整理付款凭证、聊天记录、合同或宣传承诺截图，再向机构提出明确退款诉求。"
+      ],
+      materialGaps: ["付款凭证", "与机构沟通记录", "合同或服务协议", "宣传承诺截图"],
+      manualReviewRecommended: false,
+      review_flag: "self_service"
+    });
+  });
+
+  it("does not self-service route low amount installment cases", () => {
+    const result = toPublicAnalysis(
+      {
+        ...internalAnalysis,
+        review_flag: "contact_soon"
+      },
+      {
+        amount: 2999,
+        paymentMethod: "installment"
+      }
+    );
+
+    expect(result.review_flag).toBe("contact_soon");
+    expect(result.manualReviewRecommended).toBe(true);
+  });
+
   it.each([
     "平台投诉已被驳回",
     "商家退款流程尚未完成",

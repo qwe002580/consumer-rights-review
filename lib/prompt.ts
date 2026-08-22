@@ -32,6 +32,7 @@ export function buildAnalysisPrompt(intake: IntakeInput) {
 - 禁止只是复述表单。每个判断必须说明它为什么影响本案。
 - 不堆砌法条；如需提及法律原则，应结合本案争议说明其作用。
 - 不输出客户姓名或联系方式。
+- 低金额筛选：如果金额低于 3000 且属于一次性付款，review_flag 应倾向 self_service，opportunity 应倾向 low 或 medium，建议先与机构沟通或通过 12345 等公共投诉渠道处理；但仍不得输出投诉模板、详细步骤或可复制话术。
 
 <case_data>
 本案关键事实摘要：

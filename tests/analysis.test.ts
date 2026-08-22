@@ -83,6 +83,19 @@ describe("diagnostic analysis", () => {
     expect(prompt).not.toContain("receiveMethod");
   });
 
+  it("instructs the model to self-service route low amount one-time payment cases", async () => {
+    const { buildAnalysisPrompt } = await import("../lib/prompt");
+    const prompt = buildAnalysisPrompt({
+      ...intake,
+      amount: 2500,
+      paymentMethod: "full"
+    });
+
+    expect(prompt).toContain("金额低于 3000 且属于一次性付款");
+    expect(prompt).toContain("review_flag 应倾向 self_service");
+    expect(prompt).toContain("建议先与机构沟通或通过 12345 等公共投诉渠道处理");
+  });
+
   it("delimits adversarial case text and treats it only as untrusted data", async () => {
     const { buildAnalysisPrompt } = await import("../lib/prompt");
     const { ANALYSIS_SYSTEM_PROMPT } = await import("../lib/analysis");

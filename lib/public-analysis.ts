@@ -1,4 +1,4 @@
-import type { AnalysisOutput, PublicAnalysis } from "./schema";
+import type { AnalysisOutput, IntakeInput, PublicAnalysis } from "./schema";
 
 const prohibitedPublicPatterns = [
   /\d+(?:\.\d+)?%/,
@@ -67,7 +67,38 @@ function sanitizePublicText(value: string, fallback: string) {
   return containsProhibitedPublicContent(value) ? fallback : value;
 }
 
-export function toPublicAnalysis(analysis: AnalysisOutput): PublicAnalysis {
+type PublicAnalysisContext = Pick<IntakeInput, "amount" | "paymentMethod">;
+
+function shouldRouteToLowAmountSelfService(context?: PublicAnalysisContext) {
+  return Boolean(
+    context &&
+    context.amount < 3000 &&
+    context.paymentMethod === "full"
+  );
+}
+
+const lowAmountSelfServiceAnalysis: PublicAnalysis = {
+  summary:
+    "根据你填写的信息，本次争议金额相对较低，且属于一次性付款情形，建议先保留付款凭证、沟通记录和商家承诺内容，优先与机构继续沟通；如沟通无进展，可考虑通过 12345 等公共投诉渠道反映处理。",
+  opportunity: "low",
+  evidenceCompleteness: "partial",
+  riskPoints: [
+    "金额较低时，投入过多人工处理成本可能不划算，建议先用协商和公共投诉渠道推动。",
+    "目前更适合先整理付款凭证、聊天记录、合同或宣传承诺截图，再向机构提出明确退款诉求。"
+  ],
+  materialGaps: ["付款凭证", "与机构沟通记录", "合同或服务协议", "宣传承诺截图"],
+  manualReviewRecommended: false,
+  review_flag: "self_service"
+};
+
+export function toPublicAnalysis(
+  analysis: AnalysisOutput,
+  context?: PublicAnalysisContext
+): PublicAnalysis {
+  if (shouldRouteToLowAmountSelfService(context)) {
+    return lowAmountSelfServiceAnalysis;
+  }
+
   const publicText = [
     analysis.summary,
     ...analysis.adverse_factors,

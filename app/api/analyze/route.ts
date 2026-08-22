@@ -121,7 +121,7 @@ export async function POST(request: Request) {
         id: record.id,
         assessmentNo,
         leadScore: record.leadScore,
-        analysis: toPublicAnalysis(analysis)
+        analysis: toPublicAnalysis(analysis, parsed.data)
       },
       { status: 200 }
     );
